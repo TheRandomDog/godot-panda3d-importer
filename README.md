@@ -67,9 +67,9 @@ The following is a list of features and their support level, with the following 
 ⚫No planned support
 
 ### Egg Files
-|Feature|Supported
-|-|-|-|
-|Reading|🟢 Yes
+|Feature|Supported|
+|-|-|
+|Reading|🟢 Yes|
 |Writing|⚫ No. This parser is only used to convert Egg files into a native Godot resource.
 |.egg.pz|🟢 Yes
 |Basic Geometry|🟡 Only \<Polygon\> entries are currently supported. Vertex coordinates only take three dimensions.
@@ -93,8 +93,8 @@ The following is a list of features and their support level, with the following 
 |Collisions|🟡 A **StaticBody3D** (or **Area3D** if the `intangible` flag is set) and corresponding **CollisionShape3D** child is created. If the `keep` flag is set, these nodes are parented under a mesh instance. If the `event` flag is set, a child Area3D will be created regardless. Only supports polygon, polyset, sphere, and box collision types. `descend` and `level` flags are not yet supported. \<ObjectType\> entries are **not** supported.
 
 ### Bam Files
-|Feature|Supported
-|-|-|-|
+|Feature|Supported|
+|-|-|
 |Reading|🟡 Currently does not support `REMOVE` and `FILE_DATA` object codes, and Object ID pointers above the uint16 max.
 |Writing|⚫ No. This parser is only used to convert BAM files into a native Godot resource.
 |.bam.pz|🟢 Yes, but due to a Godot limitation, this add-on will attempt to read any file with the ".pz" extension as an Egg file first. You'll have to manually switch the importer for a .bam.pz resource.
@@ -119,14 +119,14 @@ The following is a list of features and their support level, with the following 
 |Collisions|🔴 No
 
 ### SGI (RGB) Images
-|Feature|Supported
+|Feature|Supported|
 |-|-|
 |Reading|🟡 Yes. Certain information like dimension count, min/max pixel value, and the color map are ignored. Only can read images with 1-4 channels (`ZSIZE`), which generates: greyscale images, greyscale w/ alpha, RGB images, and RGBA images.
 |Writing|⚫ No. This parser is only used to convert SGI images into a native Godot **Image** or **ImageTexture** resource.
 |RLE Compression|🟢 Yes
 
 ### Multifiles
-|Feature|Supported
+|Feature|Supported|
 |-|-|
 |Reading|🟢 Yes
 |Writing|🟢 Yes, but the writer does not act in a smart way, and will rewrite the entire file from scratch on each save.
