@@ -60,11 +60,11 @@ ResourceSaver("res://myfiles.mf", my_files)
 Panda3D is a mature realtime 3D engine that's been active for twice as long as Godot, and is aimed towards all sorts of practical applications alongside games. As such, there are many features Panda3D supports that are difficult to match or emulate using Godot, and such features (if present in your .egg or .bam files) may have to be manually adjusted to work within Godot. In the end, this is merely a convenience tool to remove extra conversion steps using intermediary formats.
 
 The following is a list of features and their support level, with the following legend:
-🟢Fully supported
-🟡Partially supported
-🔵Partially supported through emulated behavior
-🔴Not yet supported
-⚫No planned support
+- 🟢Fully supported
+- 🟡Partially supported
+- 🔵Partially supported through emulated behavior
+- 🔴Not yet supported
+- ⚫No planned support
 
 ### Egg Files
 |Feature|Supported|
