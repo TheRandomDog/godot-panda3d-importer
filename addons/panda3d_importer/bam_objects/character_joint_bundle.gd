@@ -1,0 +1,2 @@
+extends PandaPartBundle
+class_name PandaCharacterJointBundle
