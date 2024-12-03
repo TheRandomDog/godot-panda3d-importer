@@ -18,6 +18,8 @@ enum SubfileFlags {
 @export var timestamp: int
 @export var name: String
 @export var data: PackedByteArray
+var data_address_start: int
+var data_address_end: int
 	
 #class EncryptedSubfile extends Subfile:
 @export_group("Encryption", "encryption_")
