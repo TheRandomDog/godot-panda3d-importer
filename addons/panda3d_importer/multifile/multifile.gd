@@ -5,6 +5,7 @@ const MAGIC_HEADER = [0x70, 0x6D, 0x66, 0x00, 0x0A, 0x0D]
 const SUBFILE_INDEXES_START = 18
 var file_size_limit: int = 4000000000
 
+var name: String
 @export var major_version: int = 1
 @export var minor_version: int = 1
 @export var scale_factor: int = 1:
