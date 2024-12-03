@@ -14,8 +14,6 @@ func _save(resource: Resource, path: String, flags: ResourceSaver.SaverFlags) ->
 	# multifiles with Panda3D's SDK, obviously. We won't do anything efficient,
 	# just create the Multifile from scratch.
 	var old_file := FileAccess.get_file_as_bytes(path)
-	if not old_file:
-		return FileAccess.get_open_error()
 
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
@@ -87,7 +85,10 @@ func _save(resource: Resource, path: String, flags: ResourceSaver.SaverFlags) ->
 	if file.get_length() > multifile.file_size_limit:
 		push_error('Multifile too big -- please increase the scale factor')
 		file.resize(0)
-		file.store_buffer(old_file)
+		if old_file:
+			file.store_buffer(old_file)
+		else:
+			DirAccess.remove_absolute(path)
 		return ERR_FILE_CANT_WRITE
 		
 	return OK
