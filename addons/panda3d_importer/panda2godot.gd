@@ -28,3 +28,7 @@ static func rotate_transform_locally(global_rotation: Transform3D, local_rotatio
 	var transform = global_rotation.inverse()
 	transform *= local_rotation.rotated_local(Vector3(-1, 0, 0), -PI / 2)
 	return transform
+
+# TODO: Stubbed out, I'm not sure where this function's code went lol
+static func merge_main_and_alpha_images(a, b) -> Texture2D:
+	return Texture2D.new()
