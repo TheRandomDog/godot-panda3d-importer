@@ -7,8 +7,6 @@ enum CoordinateSystem { Y_UP, Z_UP, Y_UP_LEFT, Z_UP_LEFT }
 const ELEMENT_END = 'ELEMENT_END'
 const EGG_END = 'EGG_END'
 
-const EggTexture = preload("res://addons/panda3d_importer/egg_entries/texture.gd")
-
 var entry_type_handlers: Dictionary
 
 var source_file_name: String

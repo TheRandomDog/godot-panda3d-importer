@@ -75,8 +75,11 @@ func has_handler() -> bool:
 ## Returns a [Resource] pointing to the script path if one is found, otherwise
 ## returns an empty [Resource].
 func _get_handler_script() -> Resource:
+	var relative_path_prefix: String = get_script().resource_path.get_base_dir()
 	for type in get_type_chain():
-		var script_path := "res://addons/panda3d_importer/bam_objects/%s.gd" % type.name.to_snake_case()
+		var script_path := "%s/bam_objects/%s.gd" % [
+			relative_path_prefix, type.name.to_snake_case()
+		]
 		if ResourceLoader.exists(script_path):
 			return load(script_path)
 	return Resource.new()

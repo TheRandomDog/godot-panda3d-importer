@@ -6,7 +6,7 @@ class_name EggGroup
 ## group contains certain elements. If a group has polygon data, [EggGeomGroup]
 ## is used. [EggCharacterGroup] is used if a group has character data.
 
-const SwitchManager = preload("res://addons/panda3d_importer/switch_manager.gd")
+const SwitchManager = preload("../switch_manager.gd")
 
 ## [code]true[/code] if there is a [code]<Switch>[/code] child entry in this group.
 ## In Panda3D, this is an indicator that child groups should be treated similar
