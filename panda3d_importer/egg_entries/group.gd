@@ -65,8 +65,10 @@ func convert_node(node: Node3D, parent: Node3D = null) -> void:
 		node.add_child(light_instance)
 		
 	if switch_enabled:
-		node.set_script(SwitchManager)
-		node.fps = fps
+		var switch_manager := SwitchManager.new()
+		switch_manager.name = 'SwitchManager'
+		switch_manager.fps = fps
+		node.add_child(switch_manager, false, Node.INTERNAL_MODE_BACK)
 		
 	gather_subgroups(parent)
 	if entry_name:
