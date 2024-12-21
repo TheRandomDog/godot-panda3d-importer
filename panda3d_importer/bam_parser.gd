@@ -262,8 +262,23 @@ func take_remaining() -> PackedByteArray:
 	datagram_size_remaining = 0
 	return slice
 
+func get_dependency_path(path: String) -> String:
+	if path.begins_with('.'):
+		if (not source_file_name) or source_file_name == '[blob]':
+			parse_error(
+				('Tried to get a dependency with relative path ' +
+					'"%s" without source_file_name being set.' % path),
+				ERR_UNCONFIGURED
+			)
+			return ''
+		return source_file_name.trim_prefix('res://').get_base_dir().path_join(path).simplify_path()
+	return path
+
 func get_dependency(path: String, type: DependencyType) -> Resource:
-	if dependency_function:
+	path = get_dependency_path(path)
+	if not path:
+		return
+	elif dependency_function:
 		return dependency_function.call(path, type)
 	return ResourceLoader.load('res://' + path)
 

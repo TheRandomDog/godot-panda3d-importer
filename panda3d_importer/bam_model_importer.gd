@@ -79,7 +79,9 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 		return error
 	for object in parser.objects.values():
 		if object.object_type.name == 'Texture':
-			var new_path = object.filename.rsplit('.', true, 1)[0] + '_a.rgb'
+			var new_path = parser.get_dependency_path(
+				object.filename.rsplit('.', true, 1)[0] + '_a.rgb'
+			)
 			var tex_options = {}
 			if FileAccess.file_exists('res://' + new_path):
 				error = append_import_external_resource(
@@ -91,7 +93,8 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 				print('result not OK, ', error)
 				return error
 			error = append_import_external_resource(
-				'res://' + object.filename, tex_options,
+				'res://' + parser.get_dependency_path(object.filename),
+				tex_options,
 				"panda3d.texture"
 			)
 			if error:
