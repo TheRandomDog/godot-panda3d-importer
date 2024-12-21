@@ -74,10 +74,10 @@ The following is a list of features and their support level, with the following 
 |.egg.pz|🟢 Yes
 |Basic Geometry|🟡 Only \<Polygon\> entries are currently supported. Vertex coordinates only take three dimensions.
 |Parametric (NURBS)|🔴 No
-|Normals|🟡 Yes, but does not follow Egg file spec *(will take vertex normal entry regardless of if all verticies have normal entries or not)*.
+|Normals|🟡 Yes, but does not follow Egg file spec *(will take vertex normal entry regardless of if all verticies have normal entries or not.)*
 |Coloring|🟢 Supports polygon and vertex coloring.
 |UV Coordinates|🟡 Does not support 3D textures, multitextures, or tangent and binormal values. Currently, only the last UV child entry for a parent is respected.
-|Textures|🟡 Can read and import JPEG, PNG, and SGI (RGB) files as texture dependencies for a .egg resource. If a texture has a separate alpha file, the resulting import will be a pre-baked combination of the two files. Only 2D RGB and RGBA texture formats are supported. Texture filters, wrap modes, mipmaps, and border colors are **not** supported.
+|Textures|🟡 Can read and import JPEG, PNG, and SGI (RGB) files as texture dependencies for a .egg resource. If a texture has a separate alpha file, the resulting import will be a pre-baked combination of the two files.<br><br>Only 2D RGB and RGBA texture formats are supported. Texture filters, wrap modes, mipmaps, and border colors are **not** supported.
 |Multitextures / TextureStages|🔴 No
 |Materials|🔴 No
 |Morphs|🔴 No
@@ -88,10 +88,10 @@ The following is a list of features and their support level, with the following 
 |Lighting|🟡 Converts Panda3D's `PointLight` to an **OmniLight3D**. (By default, converted geometry has no shading set.)
 |Level of Detail (LOD)|🔴 No
 |Characters|🟡 Yes, will convert joint data to a **Skeleton3D**. Default poses and initial transforms values for joints currently both set bone rest poses.
-|Animation|🟡 Yes, will convert animated joint transform data to **Animation** resources. Only one animation per file is supported. Shear animations are not supported. \<VertexAnim\> entries are not supported. Detecting Egg file contents is not automatic: you must choose the **Egg Animation** importer or call `EggParser.make_animation()`.
-|Fonts|🟢 Egg files containing fonts pre-generated with Panda3D's `egg-mkfont` tool can be imported as **FontFile** resources. Detecting Egg file contents is not automatic: you must choose the **Egg Font** importer or call `EggParser.make_font()`.
-|Font Features|🟡 Fonts can be imported from Egg files with "small caps", a Panda3D feature that fills in lowercase letters as smaller-scaled uppercase letters, ignoring a font's designated (or non-existent) lowercase entries. Fonts imported from Egg files **do not** support "cheesy" accent marks, a Panda3D feature that synthesizes accented characters by combining similar-looking glyphs from a font.
-|Collisions|🟡 A **StaticBody3D** (or **Area3D** if the `intangible` flag is set) and corresponding **CollisionShape3D** child is created. If the `keep` flag is set, these nodes are parented under a mesh instance. If the `event` flag is set, a child Area3D will be created regardless. Only supports polygon, polyset, sphere, and box collision types. `descend` and `level` flags are not yet supported. \<ObjectType\> entries are **not** supported.
+|Animation|🟡 Yes, will convert animated joint transform data to **Animation** resources. Only one animation per file is supported.<br><br>Shear animations are **not** supported.<br>\<VertexAnim\> entries are **not** supported.<br><br>Detecting Egg file contents is not automatic: you must choose the **Egg Animation** importer or call `EggParser.make_animation()`.
+|Fonts|🟢 Egg files containing fonts pre-generated with Panda3D's `egg-mkfont` tool can be imported as **FontFile** resources.<br><br>Detecting Egg file contents is not automatic: you must choose the **Egg Font** importer or call `EggParser.make_font()`.
+|Font Features|🟡 Fonts can be imported from Egg files with "small caps", a Panda3D feature that fills in lowercase letters as smaller-scaled uppercase letters, ignoring a font's designated (or non-existent) lowercase entries.<br><br>Fonts imported from Egg files **do not** support "cheesy" accent marks, a Panda3D feature that synthesizes accented characters by combining similar-looking glyphs from a font.
+|Collisions|🟡 A **StaticBody3D** (or **Area3D** if the `intangible` flag is set) and corresponding **CollisionShape3D** child is created.<br><br>If the `keep` flag is set, these nodes are parented under a mesh instance.<br>If the `event` flag is set, a child Area3D will be created regardless.<br><br>Only supports polygon, polyset, sphere, and box collision types.<br>`descend` and `level` flags are not yet supported.<br>\<ObjectType\> entries are **not** supported.
 
 ### Bam Files
 |Feature|Supported|
@@ -104,7 +104,7 @@ The following is a list of features and their support level, with the following 
 |Normals|🟢 Yes
 |Coloring|🟢 Supports polygon and vertex coloring.
 |UV Coordinates|🟡 Does not support 3D textures or multitextures. **Does** support binormal and tangents.
-|Textures|🟡 Can read and import JPEG, PNG, and SGI (RGB) files as texture dependencies for a .bam resource. If a texture has a separate alpha file, the resulting import will be a pre-baked combination of the two files. Only 2D RGB and RGBA texture formats are supported. Texture filters, wrap modes, mipmaps, and border colors are **not** supported.
+|Textures|🟡 Can read and import JPEG, PNG, and SGI (RGB) files as texture dependencies for a .bam resource. If a texture has a separate alpha file, the resulting import will be a pre-baked combination of the two files.<br><br>Only 2D RGB and RGBA texture formats are supported. Texture filters, wrap modes, mipmaps, and border colors are **not** supported.
 |Multitextures / TextureStages|🔴 No
 |Materials|🔴 No
 |Morphs|🔴 No
@@ -115,15 +115,15 @@ The following is a list of features and their support level, with the following 
 |Lighting|🔴 No (By default, converted geometry has no shading set.)
 |Level of Detail (LOD)|🔴 No
 |Characters|🟡 Yes, will convert joint data to a **Skeleton3D**. Initial transform is used for bone rest poses while default values of MovingParts are ignored.
-|Animation|🟡 Yes, will convert animated joint transform data to an **Animation** resource. Only animations with an underlying matrix transformation table using new-style HPR values are currently supported. Only one animation per file is supported. Shear animations are **not** supported. Detecting BAM file contents is not automatic: you must choose the **BAM Animation** importer or call `BamParser.make_animation()`.
-|Fonts|🟢 BAM files containing fonts pre-generated with Panda3D's `egg-mkfont` tool can be imported as **FontFile** resources. Detecting BAM file contents is not automatic: you must choose the **BAM Font** importer or call `BamParser.make_font()`.
-|Font Features|🟡 Fonts can be imported from BAM files with "small caps", a Panda3D feature that fills in lowercase letters as smaller-scaled uppercase letters, ignoring a font's designated (or non-existent) lowercase entries. Fonts imported from BAM files **do not** support "cheesy" accent marks, a Panda3D feature that synthesizes accented characters by combining similar-looking glyphs from a font.
+|Animation|🟡 Yes, will convert animated joint transform data to an **Animation** resource. Only one animation per file is supported.<br><br>Only animations with an underlying matrix transformation table using new-style HPR values are currently supported.<br>Shear animations are **not** supported.<br><br>Detecting BAM file contents is not automatic: you must choose the **BAM Animation** importer or call `BamParser.make_animation()`.
+|Fonts|🟢 BAM files containing fonts pre-generated with Panda3D's `egg-mkfont` tool can be imported as **FontFile** resources.<br><br>Detecting BAM file contents is not automatic: you must choose the **BAM Font** importer or call `BamParser.make_font()`.
+|Font Features|🟡 Fonts can be imported from BAM files with "small caps", a Panda3D feature that fills in lowercase letters as smaller-scaled uppercase letters, ignoring a font's designated (or non-existent) lowercase entries.<br><br>Fonts imported from BAM files **do not** support "cheesy" accent marks, a Panda3D feature that synthesizes accented characters by combining similar-looking glyphs from a font.
 |Collisions|🔴 No
 
 ### SGI (RGB) Images
 |Feature|Supported|
 |-|-|
-|Reading|🟡 Yes. Certain information like dimension count, min/max pixel value, and the color map are ignored. Only can read images with 1-4 channels (`ZSIZE`), which generates: greyscale images, greyscale w/ alpha, RGB images, and RGBA images.
+|Reading|🟡 Yes.Certain information like dimension count, min/max pixel value, and the color map are ignored.<br><br>Only can read images with 1-4 channels (`ZSIZE`), which generates: greyscale images, greyscale w/ alpha, RGB images, and RGBA images.
 |Writing|⚫ No. This parser is only used to convert SGI images into a native Godot **Image** or **ImageTexture** resource.
 |RLE Compression|🟢 Yes
 
