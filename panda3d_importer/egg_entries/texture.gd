@@ -19,10 +19,11 @@ func read_entry() -> void:
 	texture = _load_texture(contents())
 
 func _load_texture(path: String) -> Texture2D:
-	if path.get_extension() in SGIImporter.EXTENSIONS:
+	var texture = load("res://" + path)
+	if texture is Image:
 		return ImageTexture.create_from_image(load("res://" + path))
 	else:
-		return load("res://" + path)
+		return texture
 
 func read_child(child: Dictionary) -> void:
 	match child['type']:
