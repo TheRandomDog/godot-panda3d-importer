@@ -17,8 +17,8 @@ func parse_object_data() -> void:
 	super()
 	type = bam_parser.decode_u8() as Type
 	# Panda3D quantizes flat colors to the nearest multiple of 1024, to prevent
-	# runaway accumulation of slightly-different ColorAttribs. This is useful
-	# to us anyhow to prevent the same problem with Surface Materials.
+	# "runaway accumulation of slightly-different ColorAttribs". To ensure
+	# accurate conversion, we'll do the same thing.
 	if type == Type.FLAT:
 		# Get our color as a vector, as it's easier to perform operations on.
 		var color_vec := bam_parser.decode_vector4(bam_parser.decode_stdfloat)
