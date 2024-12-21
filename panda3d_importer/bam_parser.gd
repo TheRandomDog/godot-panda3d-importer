@@ -435,6 +435,18 @@ func make_animation() -> Animation:
 	var result := model_root.convert_animation()
 	converting_to_resource = false
 	return result
+	
+func make_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
+	assert(
+		objects[1].object_type.name == 'ModelRoot',
+		'The first object in %s is not ModelRoot. Ensure that this is a font file.' % source_file_name
+	)
+	
+	converting_to_resource = true
+	var model_root := objects[1] as PandaModelRoot
+	var result := model_root.convert_font(small_caps, small_caps_scale)
+	converting_to_resource = false
+	return result
 
 ## Attempts to avoid lingering cyclical references by clearing the values to
 ## [member BamParser.types_seen], and calling [code]cleanup()[/code] to and

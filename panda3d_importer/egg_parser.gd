@@ -175,6 +175,21 @@ func make_animation() -> Animation:
 		animation = bundle.convert_animation()
 	converting_to_resource = false
 	return animation
+
+## Converts the first root [EggGroup] into a [FontFile] resoucre.
+##
+## If [param small_caps] is [code]true[/code], lowercase alphabet glyphs
+## are automatically generated from uppercase alphabet glyphs but scaled down by
+## [param small_caps_scale], which may be useful if a font does not contain 
+## lowercase letters.
+func make_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
+	converting_to_resource = true
+	if not root_groups:
+		parse_error("egg file contained no groups")
+		return FontFile.new()
+	var font := root_groups[0].convert_font(small_caps, small_caps_scale)
+	converting_to_resource = false
+	return font
 	
 func next_entry() -> Dictionary:
 	var entry_response = {
