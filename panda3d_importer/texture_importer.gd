@@ -74,7 +74,7 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 		'png':
 			error = primary_file.load_png_from_buffer(FileAccess.get_file_as_bytes(source_file))
 		'rgb', 'rgba', 'sgi':
-			error = sgi_parser.parse_sgi_image(source_file)
+			error = sgi_parser.load(source_file)
 			primary_file = sgi_parser.image
 	if error != Error.OK:
 		return error
