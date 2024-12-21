@@ -1,12 +1,10 @@
 # Panda3D Native File Types Importer for Godot 4.4+
 This is an add-on for Godot 4.4+ that allows you to import or read native Panda3D file types into Godot. This includes:
 
- - **Import:** .egg and .egg.pz (Egg) files
-	 - 3D Models as **PackedScene** resources with the Egg Model importer.
-	 - Animations as **Animation** resources with the Egg Animation importer.
- - **Import:** .bam (BAM) files
-	 - 3D Models as **PackedScene** resources with the BAM Model importer.
-	 - Animations as **Animation** resources with the BAM Animation importer.
+ - **Import:** .egg (Egg) files and .bam (BAM) files
+	 - 3D Models as **PackedScene** resources with the Egg/BAM Model importer.
+	 - Animations as **Animation** resources with the Egg/BAM Animation importer.
+	 - Fonts as **FontFile** resources with the Egg/BAM Font importer.
  - **Import:** .sgi / .rgb (SGI) files
 	 - SGI Image Format as **Image** resources.
  - **Resource Loader:** .mf (Multifile) files
@@ -123,7 +121,7 @@ The following is a list of features and their support level, with the following 
 ### SGI (RGB) Images
 |Feature|Supported|
 |-|-|
-|Reading|🟡 Yes.Certain information like dimension count, min/max pixel value, and the color map are ignored.<br><br>Only can read images with 1-4 channels (`ZSIZE`), which generates: greyscale images, greyscale w/ alpha, RGB images, and RGBA images.
+|Reading|🟡 Yes. Certain information like dimension count, min/max pixel value, and the color map are ignored.<br><br>Only can read images with 1-4 channels (`ZSIZE`), which generates: greyscale images, greyscale w/ alpha, RGB images, and RGBA images.
 |Writing|⚫ No. This parser is only used to convert SGI images into a native Godot **Image** or **ImageTexture** resource.
 |RLE Compression|🟢 Yes
 
