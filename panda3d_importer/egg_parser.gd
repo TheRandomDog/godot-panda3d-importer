@@ -10,6 +10,9 @@ const EGG_END = 'EGG_END'
 var entry_type_handlers: Dictionary
 
 var source_file_name: String
+var error := OK
+var converting_to_resource := false
+
 var regex := RegEx.new()
 var comment_remover := RegEx.new()
 var whitespace_trimmer := RegEx.new()
@@ -153,20 +156,24 @@ func make_model() -> VisualInstance3D:
 	var node = VisualInstance3D.new()
 	node.name = source_file_name.get_file()
 	
+	converting_to_resource = true
 	for group in root_groups:
 		print('EGG PARSER here, looking at group %s...' % group.entry_name)
 		var child_node = group.convert()
 		if child_node:
 			node.add_child(child_node)
+	converting_to_resource = false
 	
 	return node
 	
 func make_animation() -> Animation:
 	var animation
+	converting_to_resource = true
 	for table in root_tables:
 		print('EGG PARSER here, looking at table %s...' % table.name())
 		var bundle = table.bundles[0]
 		animation = bundle.convert_animation()
+	converting_to_resource = false
 	return animation
 	
 func next_entry() -> Dictionary:
@@ -199,3 +206,20 @@ func next_entry() -> Dictionary:
 		if contents:
 			entry_response['contents'] = contents.strip_edges().trim_suffix('/*').trim_suffix('//').trim_prefix('"').trim_suffix('"')
 	return entry_response
+
+func ensure(result: bool, message: String, error_value:=FAILED) -> void:
+	if not result:
+		parse_error(message, error_value)
+	
+func parse_error(message: String, error_value:=FAILED) -> void:
+	error = error_value
+	push_error(_get_assertion_prefix() + message)
+
+func parse_warning(message: String) -> void:
+	push_warning(_get_assertion_prefix() + message)
+
+func _get_assertion_prefix() -> String:
+	if converting_to_resource:
+		return 'In "%s", while converting to a Godot resource, ' % source_file_name
+	else:
+		return 'In "%s", ' % source_file_name
