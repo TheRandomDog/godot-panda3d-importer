@@ -29,6 +29,19 @@ static func rotate_transform_locally(global_rotation: Transform3D, local_rotatio
 	transform *= local_rotation.rotated_local(Vector3(-1, 0, 0), -PI / 2)
 	return transform
 
-# TODO: Stubbed out, I'm not sure where this function's code went lol
-static func merge_main_and_alpha_images(a, b) -> Texture2D:
-	return Texture2D.new()
+static func merge_main_and_alpha_images(texture: Image, alpha: Image, alpha_file_channel:=0) -> ImageTexture:
+	texture.convert(Image.FORMAT_RGBA8)
+	assert(
+		texture.get_size() == alpha.get_size(), 
+		"Base and Alpha texture sizes do not match: %s vs %s" % 
+		[texture.get_size(), alpha.get_size()]
+	)
+		
+	var color: Color
+	for y in range(texture.get_height()):
+		for x in range(texture.get_width()):
+			color = texture.get_pixel(x, y)
+			color.a = alpha.get_pixel(x, y)[alpha_file_channel]
+			texture.set_pixel(x, y, color)
+	
+	return ImageTexture.create_from_image(texture)
