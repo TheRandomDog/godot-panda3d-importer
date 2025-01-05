@@ -6,7 +6,7 @@ class_name PandaCharacter
 ## for re-creating a Panda3D "character" (a model + skeleton).
 
 ## Maps the BAM Object IDs of each joint to the Bone IDs of our [Skeleton3D].
-var bam_joint_id_to_bone_id: Dictionary[int, int]
+var bam_joint_id_to_bone_id: Dictionary
 
 func parse_object_data() -> void:
 	super()

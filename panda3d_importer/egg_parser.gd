@@ -23,8 +23,8 @@ var entry_stack: Array[EggEntry]
 var coordinate_system := CoordinateSystem.Y_UP
 var rotation_matrix: Transform3D
 
-var vertex_pools: Dictionary[String, EggVertexPool] = {}
-var textures: Dictionary[String, EggTexture]
+var vertex_pools: Dictionary = {}
+var textures: Dictionary
 var root_groups: Array[EggGroup]
 var root_tables: Array[EggTable]
 var egg_contents: Array[Dictionary]

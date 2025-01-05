@@ -15,7 +15,7 @@ var color: Color
 var _orig_uv_coords: Vector2
 var uv_coords: Vector2
 
-var joint_influences: Dictionary[EggJoint, float]
+var joint_influences: Dictionary
 
 func read_entry() -> void:
 	id = entry_name.to_int()

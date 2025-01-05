@@ -5,7 +5,7 @@ class_name EggAnimBase
 var fps: int
 var frame_count: int
 ## Holds multiple series of animation values.
-var values: Dictionary[String, PackedFloat64Array]
+var values: Dictionary
 
 func read_child(child: Dictionary) -> void:
 	match child['type']:
@@ -38,7 +38,7 @@ func read_scalar(scalar: String, data: String) -> void:
 ##     "rotation": Array(),  # An array of quaternions
 ##     "scale": PackedVector3Array(),
 ## }[/codeblock]
-func get_animation_data() -> Dictionary[String, Variant]:
+func get_animation_data() -> Dictionary:
 	return {
 		'position': PackedVector3Array(),
 		'rotation': Array(),

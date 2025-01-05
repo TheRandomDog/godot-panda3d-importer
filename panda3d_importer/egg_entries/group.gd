@@ -89,7 +89,7 @@ func convert_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	font.fixed_size = font_size
 	font.fixed_size_scale_mode = TextServer.FIXED_SIZE_SCALE_ENABLED
 	
-	var named_subgroups: Dictionary[String, EggGroup]
+	var named_subgroups: Dictionary
 	for subgroup in subgroups:
 		named_subgroups[subgroup.name()] = subgroup
 	
@@ -107,7 +107,7 @@ func convert_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	var space_advance: float = line_height * 0.25
 	
 	var font_textures: Array[Texture2D]
-	var glyph_heights: Dictionary[int, float]
+	var glyph_heights: Dictionary
 	var tallest_glyph_height: float
 	var deepest_glyph_height: float
 	

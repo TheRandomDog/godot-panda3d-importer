@@ -22,8 +22,8 @@ static var next_texture_id := 1
 static var textures_to_id := {}
 var features: int
 
-static var surfaces: Dictionary[int, StandardMaterial3D]
-static var colors: Dictionary[Color, int]
+static var surfaces: Dictionary
+static var colors: Dictionary
 
 var color: Color
 var texture: Texture2D

@@ -30,14 +30,14 @@ var use_f64_stdfloats = false
 var use_object_stream_codes = true
 var current_object_stream_depth := -1
 
-var types_seen: Dictionary[int, BamObjectType]
+var types_seen: Dictionary
 func resolve_type(type_index: int) -> BamObjectType:
 	return types_seen[type_index]
 
 var object_ids_seen: Array[int]
 # Each index on the array represents stream depth.
 var unresolved_objects: Array[Dictionary] 
-var objects: Dictionary[int, BamObject]
+var objects: Dictionary
 var resolving_object: BamObject
 var converting_to_resource := false
 

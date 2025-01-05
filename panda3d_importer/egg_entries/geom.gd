@@ -113,7 +113,7 @@ func create_mesh_data(polygon_array: Array[EggPolygon] = [], for_collision := fa
 		PackedFloat32Array() if not for_collision else null,  # ARRAY_WEIGHTS
 		PackedInt32Array(),    # ARRAY_INDEX
 	]
-	var surfaces: Dictionary[int, Array]
+	var surfaces: Dictionary
 	
 	# Unlike BAM files, verticies that make up the same polygon can have
 	# different combinations of vertex data. Since we're only temporarily
@@ -156,10 +156,10 @@ func create_mesh_data(polygon_array: Array[EggPolygon] = [], for_collision := fa
 			mesh_array[Mesh.ARRAY_COLOR].append(vertex.color)
 			mesh_array[Mesh.ARRAY_TEX_UV].append(vertex.uv_coords)
 			
-			var joints: Array[EggJoint] = vertex.joint_influences.keys()
+			var joints: Array = vertex.joint_influences.keys()
 			for i in range(8):
 				if i < joints.size():
-					var joint := joints[i]
+					var joint: EggJoint = joints[i]
 					mesh_array[Mesh.ARRAY_BONES].append(joint.bone_id)
 					mesh_array[Mesh.ARRAY_WEIGHTS].append(vertex.joint_influences[joint])
 				else:
@@ -208,7 +208,7 @@ func convert_model() -> MeshInstance3D:
 	
 	var mesh_data := create_mesh_data()
 	var mesh_array: Array = mesh_data[0]
-	var surfaces: Dictionary[int, Array] = mesh_data[1]
+	var surfaces: Dictionary = mesh_data[1]
 
 	var mesh := ArrayMesh.new()
 	var mesh_surface_count := 0
@@ -217,7 +217,7 @@ func convert_model() -> MeshInstance3D:
 	for surface_id in surfaces.keys():
 		var mesh_array_part := mesh_array.duplicate()
 		var indicies := Array(mesh_array_part[Mesh.ARRAY_INDEX])
-		var surface_indicies := surfaces[surface_id]
+		var surface_indicies: Array = surfaces[surface_id]
 		mesh_array_part[Mesh.ARRAY_INDEX] = PackedInt32Array(
 			indicies.filter(func(i): return i in surface_indicies)
 		)

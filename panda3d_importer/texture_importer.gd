@@ -5,6 +5,9 @@ var sgi_parser := SGIParser.new()
 
 enum Presets { DEFAULT }
 
+func _can_import_threaded():
+	return false
+
 func _get_importer_name():
 	return "panda3d.texture"
 

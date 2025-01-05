@@ -1,5 +1,5 @@
-# Panda3D Native File Types Importer for Godot 4.4+
-This is an add-on for Godot 4.4+ that allows you to import or read native Panda3D file types into Godot. This includes:
+# Panda3D Native File Types Importer for Godot 4.3+
+This is an add-on for Godot 4.3+ that allows you to import or read native Panda3D file types into Godot. This includes:
 
  - **Import:** .egg (Egg) files and .bam (BAM) files
 	 - 3D Models as **PackedScene** resources with the Egg/BAM Model importer.
@@ -11,14 +11,12 @@ This is an add-on for Godot 4.4+ that allows you to import or read native Panda3
 
 
 ### Warning: Experimental
-At the moment, this add-on is mostly experimental and there are many features that are untested or unsupported. There are several debug outputs and editor warnings, and use of in-development features only present in Godot 4.4 dev builds. There are multiple discrepancies between what's supported between Egg files and BAM files.
-
-In the future, these issues should become more resolved and the add-on will likely be backported to support older Godot 4 versions.
+At the moment, this add-on is mostly experimental and there are many features that are untested or unsupported. There are several debug outputs and editor warnings, as well as multiple discrepancies between what's supported between Egg files and BAM files. In the future, these issues should become more resolved.
 
 ## Installing
 This add-on is currently only available through GitHub while experimental.
 1. Clone or download this repository from GitHub.
-2. Copy the `addons/panda3d_importer` folder into your project's add-ons folder.
+2. Copy the `panda3d_importer` folder into your project's add-ons folder.
 3. Enable the Panda3D Importer add-on in the `Project -> Project Settings -> Plugins` menu.
 
 ## Using the add-on
@@ -34,13 +32,13 @@ if result == OK:
 var bam_parser := BamParser.new()
 var result: Error = bam_parser.parse(external_byte_array)
 if result == OK:
-	var streamed_animation: Animation = bam_parser.make_animation()
+	var anim_from_bytes: Animation = bam_parser.make_animation()
 bam_parser.cleanup()
 
-var sgi_parse := SGIParser.new()
+var sgi_parser := SGIParser.new()
 var result: Error = sgi_parser.load("res://texture.rgb")
 if result == OK:
-  var texture := ImageTexture.create_from_image(result.image)
+	var texture := ImageTexture.create_from_image(sgi_parser.image)
 ```
 Multifiles can also be read and written to as resources, but aren't imported. Opening them via the FileSystem will show Multifile and Subfile data in the Inspector. You can also interact with them through GDScript:
 ```swift
@@ -50,7 +48,7 @@ func _subfile_not_obsolete(subfile: MultifileSubfile):
 
 var my_files: Multifile = load("res://myfiles.mf")
 my_files.subfiles = my_files.subfiles.filter(_subfile_not_obsolete)
-ResourceSaver("res://myfiles.mf", my_files)
+ResourceSaver.save("res://myfiles.mf", my_files)
 ```
 
 

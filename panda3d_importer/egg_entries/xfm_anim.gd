@@ -28,8 +28,8 @@ func read_scalar(scalar: String, data: String) -> void:
 		'contents':
 			column_contents = data
 
-func _get_values_frame(frame: int, columns: String, default:=0.0) -> Dictionary[String, float]:
-	var resp: Dictionary[String, float]
+func _get_values_frame(frame: int, columns: String, default:=0.0) -> Dictionary:
+	var resp: Dictionary
 	for column in columns:
 		var value: float
 		match values.get(column, []).size():

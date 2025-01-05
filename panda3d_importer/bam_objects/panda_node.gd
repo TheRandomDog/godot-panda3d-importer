@@ -16,7 +16,7 @@ var draw_control_mask: int = 0  # 6.2+
 var draw_show_mask: int = 0xFFFFFFFF  # 
 var into_collide_mask: int = 0  # 4.12+
 var bounds_type: BoundsType = BoundsType.DEFAULT  # 6.19+
-var tags: Dictionary[String, String]  # 4.4+
+var tags: Dictionary  # 4.4+
 var o_parents: Array[PandaNode]
 var o_children: Array[Child]
 var o_stashed: Array[Child]
@@ -188,7 +188,7 @@ func convert_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	var glyph_nodes: Array[Node] = design_size_node.get_parent().find_children(
 		'*', 'MeshInstance3D', false, false
 	)
-	var glyph_heights: Dictionary[int, float]
+	var glyph_heights: Dictionary
 	var tallest_glyph_height: float
 	var deepest_glyph_height: float
 	

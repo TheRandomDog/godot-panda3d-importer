@@ -16,7 +16,7 @@ func parse_object_data() -> void:
 ##     "rotation": Array(),  # An array of quaternions
 ##     "scale": PackedVector3Array(),
 ## }[/codeblock]
-func get_animation_data() -> Dictionary[String, Variant]:
+func get_animation_data() -> Dictionary:
 	return {
 		'position': PackedVector3Array(),
 		'rotation': Array(),

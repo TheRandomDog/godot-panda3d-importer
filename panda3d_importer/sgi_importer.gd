@@ -37,7 +37,7 @@ func _get_import_options(path, preset_index):
 	return []
 
 func _import(source_file, save_path, options, platform_variants, gen_files) -> Error:
-	var error = parser.parse_sgi_image(source_file)
+	var error = parser.load(source_file)
 	if error != Error.OK:
 		return error
 
