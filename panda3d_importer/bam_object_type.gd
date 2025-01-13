@@ -44,6 +44,13 @@ var name: String
 var parent_types: Array[BamObjectType]
 ## The [Script] resource that will handle objects instantiated with this type.
 var handler: Resource
+## [code]true[/code] if [b]any[/b] script exists that can handle this object
+## type. (This may include a parent object type script if there is no script for
+## a specific derived object type).
+var has_handler := false
+## [code]true[/code] if a script exists that can handle this object's
+## [b]exact[/b] type (not including any parent object type scripts).
+var has_exact_handler := false
 
 @warning_ignore("shadowed_variable")
 func _init(index: int, name: String, parent_types: Array[BamObjectType]):
@@ -65,21 +72,19 @@ func get_type_chain() -> Array[BamObjectType]:
 		type_chain.append_array(parent_type.get_type_chain())
 	return type_chain
 
-## Returns [code]true[/code] if [b]any[/b] script that can handle this object 
-## type (this may include a parent object type script if there is no script for
-## a specific derived object type).
-func has_handler() -> bool:
-	return handler.resource_path != ""
-
 ## Searches this object's type chain to find the first matching script handler.[br][br]
 ## Returns a [Resource] pointing to the script path if one is found, otherwise
 ## returns an empty [Resource].
 func _get_handler_script() -> Resource:
 	var relative_path_prefix: String = get_script().resource_path.get_base_dir()
+	has_handler = true
+	has_exact_handler = true
 	for type in get_type_chain():
 		var script_path := "%s/bam_objects/%s.gd" % [
 			relative_path_prefix, type.name.to_snake_case()
 		]
 		if ResourceLoader.exists(script_path):
 			return load(script_path)
+		has_exact_handler = false
+	has_handler = false
 	return Resource.new()

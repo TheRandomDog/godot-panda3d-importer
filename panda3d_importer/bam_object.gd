@@ -76,8 +76,12 @@ func _to_string() -> String:
 		var type_names = PackedStringArray(type_chain.map(func(type): return type.name))
 		return "<BamObject type_index: %s (%s), object_id: %s, object_data_length: %s>" % [
 			object_type.index, ' <- '.join(type_names), object_id, object_data.size()]
-	else:
+	elif object_type.has_exact_handler:
 		return "<%s %s>" % [object_type.name, object_id]
+	elif object_type.has_handler:
+		return "<%s (%s) %s>" % [object_type.name, object_type.handler.resource_path, object_id]
+	else:
+		return "<%s (NO HANDLER) %s>" % [object_type.name, object_id]
 	
 func is_resolved() -> bool:
 	return resolved
@@ -89,7 +93,7 @@ static func all_resolved(objects: Array) -> bool:
 ## and calls [code]parse_object_data()[/code]. Returns the instantiated handler
 ## script, or [code]null[/code] if the object type has no suitable handler. 
 func resolve() -> Variant:
-	if not object_type.has_handler():
+	if not object_type.has_handler:
 		return null
 	
 	var inheritor = object_type.handler.new(bam_parser, object_type, object_id, object_data)
