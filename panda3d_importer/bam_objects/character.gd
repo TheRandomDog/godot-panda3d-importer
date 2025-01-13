@@ -32,6 +32,7 @@ func generate_skeleton() -> Skeleton3D:
 	var skeleton := Skeleton3D.new()
 	skeleton.name = 'Skeleton3D'
 	
+	# First, check our part bundles for any explicitly defined joints.
 	for bundle in o_bundles:
 		if bundle is PandaCharacterJointBundle:
 			for group in bundle.o_children:
@@ -41,6 +42,44 @@ func generate_skeleton() -> Skeleton3D:
 						group.name
 				)  # TODO
 				_check_group_for_joints(skeleton, group)
+				
+	# Next, we'll want to add static bones to account for any other form
+	# of transform blends.
+	# TODO: This would not apply to non-character models, so we either always
+	# need to create a skeleton whenever a populated TransformBlendTable exists
+	# (as it's the easiest in-engine way to handle weight-blended verticies),
+	# or implement dynamic verticies in a different way.
+	
+	# We'll validate which static vertex transforms apply to this Character.
+	# Most BAM files have just one character anyway, but it's good to make sure.
+	var static_vertex_transforms: Array[PandaVertexTransform]
+	for object in bam_parser.objects.values():
+		if object is PandaVertexTransform and object is not PandaJointVertexTransform:
+			static_vertex_transforms.append(object)
+	for vertex_transform in static_vertex_transforms:
+		# Gross
+		var found := false
+		for child in o_children:
+			if child.node is PandaGeomNode:
+				for geom_info in child.node.o_geoms:
+					if geom_info.geom.o_data.o_transform_blend_table:
+						for blend in geom_info.geom.o_data.o_transform_blend_table.o_blends:
+							for entry in blend.entries:
+								if entry.transform.object_id == vertex_transform.object_id:
+									found = true
+									break
+							if found:
+								break
+					if found:
+						break
+			if found:
+				break
+		
+		if found:
+			var bone_id := skeleton.add_bone(
+				'StaticVertexTransform%s' % vertex_transform.object_id)
+			vertex_transform.static_bone_id = bone_id
+			skeleton.set_bone_rest(bone_id, vertex_transform.get_static_transform())
 	
 	skeleton.reset_bone_poses()
 	return skeleton

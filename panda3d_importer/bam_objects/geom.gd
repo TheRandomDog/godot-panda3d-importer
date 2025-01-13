@@ -93,14 +93,13 @@ func create_base_mesh_array() -> Array:
 				var blend := blend_table.o_blends[blend_index]
 				for entry_index in range(blend.entries.size()):
 					var entry: PandaTransformBlend.TransformEntry = blend.entries[entry_index]
-					bam_parser.ensure(
-						entry.transform is PandaJointVertexTransform,
-						('TransformBlendTable(%s).blends[%s].entries[%s].transform ' +
-							'is not a PandaJointVertexTransform: %s') %
-							[blend_table.object_id, blend_index, entry_index, entry.transform]
-					)
-					var joint: PandaCharacterJoint = entry.transform.o_joint
-					next_bones[entry_index] = joint.get_bone_id()
+					if entry.transform is PandaJointVertexTransform:
+						# Joint transforms get their associated bone ID from the Character object.
+						var joint: PandaCharacterJoint = entry.transform.o_joint
+						next_bones[entry_index] = joint.get_bone_id()
+					else:
+						# Other transforms have their associated bone ID set manually.
+						next_bones[entry_index] = entry.transform.static_bone_id
 					next_weights[entry_index] = entry.weight
 					
 				mesh_array[Mesh.ARRAY_BONES].append_array(next_bones)
