@@ -31,11 +31,12 @@ static func rotate_transform_locally(global_rotation: Transform3D, local_rotatio
 
 static func merge_main_and_alpha_images(texture: Image, alpha: Image, alpha_file_channel:=0) -> ImageTexture:
 	texture.convert(Image.FORMAT_RGBA8)
-	assert(
-		texture.get_size() == alpha.get_size(), 
-		"Base and Alpha texture sizes do not match: %s vs %s" % 
-		[texture.get_size(), alpha.get_size()]
-	)
+	var texture_size := texture.get_size()
+	if texture_size != alpha.get_size():
+		alpha.resize(
+			texture_size.x, texture_size.y,
+			Image.INTERPOLATE_CUBIC
+		)
 		
 	var color: Color
 	for y in range(texture.get_height()):

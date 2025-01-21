@@ -90,8 +90,13 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 			return ERR_FILE_CORRUPT
 		
 		primary_file.convert(Image.FORMAT_RGBA8)
+		var primary_file_size := primary_file.get_size()
+		if primary_file_size != alpha_image.get_size():
+			alpha_image.resize(
+				primary_file_size.x, primary_file_size.y,
+				Image.INTERPOLATE_CUBIC
+			)
 		
-		assert(primary_file.get_size() == Vector2i(alpha_image.get_size()), "Base and Alpha texture sizes do not match for %s: %s vs %s" % [source_file, primary_file.get_size(), Vector2i(alpha_image.get_size())])
 		var color: Color
 		for y in range(primary_file.get_height()):
 			for x in range(primary_file.get_width()):
