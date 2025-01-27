@@ -13,8 +13,7 @@ func parse_object_data() -> void:
 ## Converts our AnimBundleNode into a Godot animation.
 func convert_animation() -> Animation:
 	var animation := Animation.new()
-	# TODO
-	#animation.loop_mode = Animation.LOOP_LINEAR
+	animation.loop_mode = configuration['loop_mode']
 	animation.length = o_bundle.frame_count / o_bundle.fps
 	animation.step = 1 / o_bundle.fps
 	

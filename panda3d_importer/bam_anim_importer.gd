@@ -31,20 +31,35 @@ func _get_import_order():
 func _get_preset_name(preset_index):
 	return "Default"
 
-func _get_import_options(path, preset_index):
-	return []#[{"name": "my_option", "default_value": false}]
+func _get_import_options(path: String, preset_index: int):
+	var path_base := path.get_file().get_basename().to_lower()
+	return [
+		{
+			'name': 'loop_mode',
+			'default_value': (
+				Animation.LoopMode.LOOP_LINEAR
+				if path_base.ends_with('loop') or path_base.ends_with('cycle') else
+				Animation.LoopMode.LOOP_NONE
+			),
+			'property_hint': PROPERTY_HINT_ENUM,
+			'hint_string': 'None,Loop,Ping-Pong'
+		}
+	]
+	
+func _get_option_visibility(path, option_name, options):
+	return true
 	
 func _import(source_file, save_path, options, platform_variants, gen_files) -> Error:
 	var parser := BamParser.new()
+	parser.configuration[PandaAnimBundleNode]['loop_mode'] = options['loop_mode']
+	
 	var result := parser.load(source_file)
 	if result != OK:
-		print('result not OK, ', result)
 		return result
 	assert(parser.objects.size() > 0)
 	
 	var animation = parser.make_animation()
+	parser.cleanup()
 	
 	var filename = save_path + "." + _get_save_extension()
-	var x = ResourceSaver.save(animation, filename)
-	print(filename, x)
-	return x
+	return ResourceSaver.save(animation, filename)
