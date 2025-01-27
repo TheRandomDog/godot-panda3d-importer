@@ -38,12 +38,18 @@ func _get_preset_name(preset_index):
 	return 'Default'
 
 func _get_import_options(path, preset_index):
-	return []
 	return [
+		# Character
 		{
-			"name": "is_character",
-			"default_value": true,
-		},
+			"name": "character/if_excess_transform_blends",
+			"default_value": 0,
+			"property_hint": PROPERTY_HINT_ENUM,
+			"hint_string": "Error,Warn and remove least significant blend(s),Remove lease significant blend(s)"
+		}
+	]
+	# TODO:
+	[
+		# Animations
 		{
 			"name": "animations/filename_wildcard",
 			"default_value": "",
@@ -64,8 +70,6 @@ func _get_import_options(path, preset_index):
 	]
 		
 func _get_option_visibility(path, option_name, options):
-	if option_name.begins_with('animations/'):
-		return options['is_character']
 	return true
 	
 func _import(source_file, save_path, options, platform_variants, gen_files) -> Error:
@@ -73,9 +77,12 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 		return ERR_SKIP
 	
 	var parser := BamParser.new()
+	parser.configuration[PandaTransformBlendTable]['excess_transform_blend_behavior'] = (
+		options['character/if_excess_transform_blends']
+	)
+	
 	var error := parser.load(source_file)
 	if error:
-		print('result not OK, ', error)
 		return error
 	for object in parser.objects.values():
 		if object.object_type.name == 'Texture':
@@ -90,7 +97,6 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 				)
 				tex_options['alpha_filename'] = new_path
 			if error:
-				print('result not OK, ', error)
 				return error
 			error = append_import_external_resource(
 				'res://' + parser.get_dependency_path(object.filename),
@@ -98,21 +104,17 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 				"panda3d.texture"
 			)
 			if error:
-				print('result not OK, ', error)
 				return error
 	assert(parser.objects.size() > 0)
 	
 	var scene = PackedScene.new()
 	var model = parser.make_model()
 	if parser.error:
-		print('result not OK, ', parser.error)
 		return parser.error
 	for child in model.find_children('*', "", true, false):
 		child.set_owner(model)
 	scene.pack(model)
-	
 	parser.cleanup()
 
 	var filename = save_path + "." + _get_save_extension()
-	var x = ResourceSaver.save(scene, filename)
-	return x
+	return ResourceSaver.save(scene, filename)
