@@ -17,6 +17,7 @@ static var rotation_matrix := Transform3D(
 
 var _labels: Array
 var source_file_name: String
+var configuration := ParserConfigs.get_bam_parser_configuration()
 
 var read_contents: PackedByteArray
 var read_byte_offset := 0

@@ -28,6 +28,8 @@ var is_placeholder = false
 ## If [code]true[/code], [method BamObject.parse_object_data] has already been
 ## called and all of the object's properties should be set.
 var resolved := false
+## The configuration for this [BAMObject] to use while parsing.
+var configuration: Dictionary
 
 func _init(parser: BamParser, type: BamObjectType, id: int, data: PackedByteArray) -> void:
 	bam_parser = parser
@@ -97,6 +99,7 @@ func resolve() -> Variant:
 		return null
 	
 	var inheritor = object_type.handler.new(bam_parser, object_type, object_id, object_data)
+	inheritor.configuration = bam_parser.configuration.get(object_type.handler, {})
 	bam_parser.objects[object_id] = inheritor
 	var old_read_info = bam_parser.swap_read_contents(object_data)
 	inheritor.parse_object_data()
