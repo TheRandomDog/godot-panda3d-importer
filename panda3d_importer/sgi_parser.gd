@@ -142,7 +142,7 @@ func _read_with_compression(stream: StreamPeerBuffer, bytes_per_pixel: int, size
 				instructions = get_data.call()
 				count = instructions & 0x7F
 				repeat = not (instructions & 0x80)
-				if not instructions:
+				if not count:
 					# End of scanline
 					assert(stream.get_position() == offset_start + offset_length)
 					break
