@@ -117,10 +117,13 @@ func _gather_mesh_data() -> Dictionary:
 					var vector_data = bam_parser.decode_vector3(
 						column['numeric_type_decoder']
 					)  
-					if column_name == 'tangent':
-						data['ptangents'].append(vector_data)
-					elif column_name == 'binormal':
-						data['binormals'].append(vector_data)
+					match column_name:
+						'tangent':
+							data['ptangents'].append(vector_data)
+						'binormal':
+							data['binormals'].append(vector_data)
+						'normal':
+							data['normals'].append(vector_data)
 				PandaGeom.Contents.COLOR:
 					data['colors'].append(column['numeric_type_decoder'].call())
 				_:
