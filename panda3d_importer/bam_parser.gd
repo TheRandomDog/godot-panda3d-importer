@@ -423,6 +423,172 @@ func make_model() -> VisualInstance3D:
 	converting_to_resource = false
 	return result
 
+## Converts the contents of the BAM file to a [Node2D] that has a [Sprite2D]
+## child for every "flat" geom in the BAM. Useful for converting texture cards
+## to Godot's 2D space.[br][br]
+##
+## [b][method BamParser.parse] must be called first.[/b][br][br]
+##
+## [b]NOTE:[/b] These sprites can often be very big by default. The scale value
+## of a sprite is already set to mirror the aspect ratio seen in the BAM geom.
+## When adjusting a sprite's scale, you may either want to adjust the scale of
+## the [b]parent Node2D[/b], or maintain the aspect ratio of the sprite's original scale.
+func make_sprites() -> Node2D:
+	assert(
+		objects[1].object_type.name == 'ModelRoot',
+		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
+	)
+	
+	converting_to_resource = true
+	var model_root := objects[1] as PandaModelRoot
+	var model := model_root.convert()
+	
+	var node_2d := Node2D.new()
+	node_2d.name = model_root.name
+	node_2d.scale = configuration['parser']['make_sprite_scale']
+	
+	var check_children = func(check_children: Callable, node: Node) -> Sprite2D:
+		for child in node.get_children():
+			var sprite := check_children.call(check_children, child)
+			if sprite:
+				node_2d.add_child(sprite)
+				
+		if node is not MeshInstance3D or node.get_aabb().get_shortest_axis_size() >= 0.1:
+			return null
+			
+		var mesh_instance := node as MeshInstance3D
+		var aabb := mesh_instance.get_aabb()
+		var aabb_center := aabb.get_center()
+		var mesh_rect: Vector2
+		var mesh_center: Vector2
+		match aabb.get_shortest_axis_index():
+			0:
+				mesh_rect = Vector2(aabb.size.y, aabb.size.z)
+				mesh_center = Vector2(aabb_center.y, aabb_center.z)
+			1:
+				mesh_rect = Vector2(aabb.size.x, aabb.size.z)
+				mesh_center = Vector2(aabb_center.x, aabb_center.z)
+			2:
+				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
+				mesh_center = Vector2(aabb_center.x, aabb_center.y)
+		
+		for i in range(mesh_instance.mesh.get_surface_count()):
+			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
+			var material := mesh_instance.mesh.surface_get_material(i)
+			if material.albedo_texture:
+				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
+				if uvs.size() != 4:
+					continue
+					
+				var sprite := Sprite2D.new()
+				sprite.name = node.name
+				sprite.texture = material.albedo_texture
+				var size := sprite.texture.get_size()
+				sprite.region_rect = Rect2(uvs.min() * size, Vector2(0, 0))
+				sprite.region_rect.end = uvs.max() * size
+				sprite.region_enabled = true
+				var transform: Transform3D
+				var curr_node: Node = node
+				while curr_node != model:
+					transform *= curr_node.transform
+					curr_node = curr_node.get_parent()
+					
+				sprite.position = Vector2(transform.origin.x, -transform.origin.y) * size
+				sprite.scale = (mesh_rect / sprite.region_rect.size) * size
+				sprite.offset = (-mesh_center / sprite.scale) * size
+				return sprite
+		return null
+	
+	converting_to_resource = false
+	check_children.call(check_children, model)
+	return node_2d
+
+## Converts the contents of the BAM file to a [Dictionary] that has an entry
+## for every "flat" geom in the BAM. These entries are structured as follows:
+## [codeblock]
+## {'node_name': {
+##     'texture': AtlasTexture,
+##     'position': Vector2
+##     'scale': Vector2
+## }}
+## [/codeblock][br][br]
+##
+## [b][method BamParser.parse] must be called first.[/b][br][br]
+##
+## [b]NOTE:[/b] The position and scale are the values found in the original BAM
+## geom. For example, if you have a BAM file for a GUI that already has its
+## elements pre-placed, you could use this method to attach several [TextureRect]s
+## to a parent [Control] node and set the position and scale of each child to match
+## accordingly. Just keep in mind that these textures are often very big by default
+## -- scaling a parent [Control] node as needed is recommended. 
+func make_atlas_textures() -> Dictionary:
+	assert(
+		objects[1].object_type.name == 'ModelRoot',
+		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
+	)
+	
+	converting_to_resource = true
+	var model_root := objects[1] as PandaModelRoot
+	var model := model_root.convert()
+	
+	var check_children = func(check_children: Callable, node: Node) -> Dictionary:
+		var textures := {}
+		for child in node.get_children():
+			textures.merge(check_children.call(check_children, child))
+		
+		if node is not MeshInstance3D or node.get_aabb().get_shortest_axis_size() >= 0.1:
+			return textures
+			
+		var mesh_instance := node as MeshInstance3D
+		var aabb := mesh_instance.get_aabb()
+		var aabb_center := aabb.get_center()
+		var mesh_rect: Vector2
+		var mesh_center: Vector2
+		match aabb.get_shortest_axis_index():
+			0:
+				mesh_rect = Vector2(aabb.size.y, aabb.size.z)
+				mesh_center = Vector2(aabb_center.y, aabb_center.z)
+			1:
+				mesh_rect = Vector2(aabb.size.x, aabb.size.z)
+				mesh_center = Vector2(aabb_center.x, aabb_center.z)
+			2:
+				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
+				mesh_center = Vector2(aabb_center.x, aabb_center.y)
+
+		for i in range(mesh_instance.mesh.get_surface_count()):
+			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
+			var material := mesh_instance.mesh.surface_get_material(i)
+			if material.albedo_texture:
+				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
+				if uvs.size() != 4:
+					continue
+					
+				var texture := AtlasTexture.new()
+				texture.atlas = material.albedo_texture
+				var size := texture.atlas.get_size()
+				texture.region = Rect2(uvs.min() * size, Vector2(0, 0))
+				texture.region.end = uvs.max() * size
+				var transform: Transform3D
+				var curr_node: Node = node
+				while curr_node != model:
+					transform *= curr_node.transform
+					curr_node = curr_node.get_parent()
+				var scale := (mesh_rect / texture.region.size) * size
+				
+				textures[mesh_instance.name] = {
+					'texture': texture,
+					'position': (
+						Vector2(transform.origin.x, -transform.origin.y) * size  # Position on mesh
+						- ((texture.get_size() * scale) / 2)  # Center origin (instead of top-left)
+						- (mesh_center * size)  # Offset "center" according to mesh center offset
+					),
+					'scale': scale,
+				}
+		return textures
+	
+	converting_to_resource = false
+	return check_children.call(check_children, model)
+
 ## Converts the contents of the BAM file to an [Animation] resource.
 ## [b][method BamParser.parse] must be called first.[/b]
 func make_animation() -> Animation:
