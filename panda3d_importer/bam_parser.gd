@@ -423,17 +423,25 @@ func make_model() -> VisualInstance3D:
 	converting_to_resource = false
 	return result
 
-## Converts the contents of the BAM file to a [Node2D] that has a [Sprite2D]
-## child for every "flat" geom in the BAM. Useful for converting texture cards
-## to Godot's 2D space.[br][br]
+## Converts the contents of the BAM file to a [Node2D]. Only flat geometry
+## will be converted, anything else will be ignored. Simple geometry that just
+## represents a square with a 1:1 UV map (like those used for texture cards)
+## will be converted to a [Sprite2D] child, whereas anything more complex
+## (but still flat) will be converted to a [MeshInstance2D] child.[br][br]
 ##
-## [b][method BamParser.parse] must be called first.[/b][br][br]
+## You can choose to only convert simple geometry by passing [code]false[/code]
+## to [param include_complex_meshes]. You can also control what is considered
+## "flat" by adjusting the [param flat_max_depth] value, which defaults to
+## [code]0.1[/code].[br][br]
 ##
-## [b]NOTE:[/b] These sprites can often be very big by default. The scale value
-## of a sprite is already set to mirror the aspect ratio seen in the BAM geom.
-## When adjusting a sprite's scale, you may either want to adjust the scale of
-## the [b]parent Node2D[/b], or maintain the aspect ratio of the sprite's original scale.
-func make_sprites() -> Node2D:
+## [b][method BamParser.parse] must be called before calling this method.[/b][br][br]
+##
+## [b]NOTE:[/b] The size of the outputted Node2D can often be very big by
+## default. The scale value of a sprite/mesh is already set to mirror what was
+## present in the BAM geom. As a result, if you want to scale a specific child,
+## make sure to respect its aspect ratio or parent it under another node for
+## scaling instead.
+func make_2d(include_complex_meshes := true, flat_max_depth := 0.1) -> Node2D:
 	assert(
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
@@ -447,13 +455,14 @@ func make_sprites() -> Node2D:
 	node_2d.name = model_root.name
 	node_2d.scale = configuration['parser']['make_sprite_scale']
 	
-	var check_children = func(check_children: Callable, node: Node) -> Sprite2D:
+	var check_children = func(check_children: Callable, node: Node) -> Node2D:
 		for child in node.get_children():
 			var sprite := check_children.call(check_children, child)
 			if sprite:
 				node_2d.add_child(sprite)
 				
-		if node is not MeshInstance3D or node.get_aabb().get_shortest_axis_size() >= 0.1:
+		if (node is not MeshInstance3D or
+				node.get_aabb().get_shortest_axis_size() >= flat_max_depth):
 			return null
 			
 		var mesh_instance := node as MeshInstance3D
@@ -464,39 +473,59 @@ func make_sprites() -> Node2D:
 		match aabb.get_shortest_axis_index():
 			0:
 				mesh_rect = Vector2(aabb.size.y, aabb.size.z)
-				mesh_center = Vector2(aabb_center.y, aabb_center.z)
+				mesh_center = Vector2(aabb_center.y, -aabb_center.z)
 			1:
 				mesh_rect = Vector2(aabb.size.x, aabb.size.z)
-				mesh_center = Vector2(aabb_center.x, aabb_center.z)
+				mesh_center = Vector2(aabb_center.x, -aabb_center.z)
 			2:
 				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
-				mesh_center = Vector2(aabb_center.x, aabb_center.y)
+				mesh_center = Vector2(aabb_center.x, -aabb_center.y)
 		
 		for i in range(mesh_instance.mesh.get_surface_count()):
 			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
 			var material := mesh_instance.mesh.surface_get_material(i)
 			if material.albedo_texture:
+				var new_node: Node2D
 				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
-				if uvs.size() != 4:
-					continue
-					
-				var sprite := Sprite2D.new()
-				sprite.name = node.name
-				sprite.texture = material.albedo_texture
-				var size := sprite.texture.get_size()
-				sprite.region_rect = Rect2(uvs.min() * size, Vector2(0, 0))
-				sprite.region_rect.end = uvs.max() * size
-				sprite.region_enabled = true
+				# Going from meters -> pixels will severly decrease the size
+				# of the outputted node, so we'll need an actual conversion.
+				# Let's do the default conversion for a Sprite3D:
+				#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
+				var m2px := 100
+				
 				var transform: Transform3D
 				var curr_node: Node = node
 				while curr_node != model:
 					transform *= curr_node.transform
 					curr_node = curr_node.get_parent()
-					
-				sprite.position = Vector2(transform.origin.x, -transform.origin.y) * size
-				sprite.scale = (mesh_rect / sprite.region_rect.size) * size
-				sprite.offset = (-mesh_center / sprite.scale) * size
-				return sprite
+				var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
+				
+				# What type of 2D node are we going to make?
+				if uvs.size() == 4:
+					# This is just a simple square, and likely represents a
+					# texture card with a 1:1 UV map -- ideal for a sprite.
+					var sprite := Sprite2D.new()
+					sprite.name = node.name
+					sprite.texture = material.albedo_texture
+					sprite.position = position
+					var texture_size: Vector2 = sprite.texture.get_size()
+					sprite.region_rect = Rect2(uvs.min() * texture_size, Vector2(0, 0))
+					sprite.region_rect.end = uvs.max() * texture_size
+					sprite.region_enabled = true
+					sprite.scale = (mesh_rect / sprite.region_rect.size) * m2px
+					sprite.offset = (mesh_center * sprite.region_rect.size) / mesh_rect
+					return sprite
+				elif include_complex_meshes:
+					# This shape is more complex than just a square, but it is
+					# still flat -- since we were requested to, we'll make
+					# a MeshInstance2D node for it.
+					var mesh_2d := MeshInstance2D.new()
+					mesh_2d.name = node.name
+					mesh_2d.mesh = mesh_instance.mesh
+					mesh_2d.texture = material.albedo_texture
+					mesh_2d.position = position
+					mesh_2d.scale = Vector2(m2px, -m2px)
+					return mesh_2d
 		return null
 	
 	converting_to_resource = false
@@ -504,7 +533,9 @@ func make_sprites() -> Node2D:
 	return node_2d
 
 ## Converts the contents of the BAM file to a [Dictionary] that has an entry
-## for every "flat" geom in the BAM. These entries are structured as follows:
+## containing an [AtlasTexture] for every instance of simple flat geometry
+## (essentially square meshes with a 1:1 UV map, like those used for texture
+## cards). These entries are structured as follows:
 ## [codeblock]
 ## {'node_name': {
 ##     'texture': AtlasTexture,
@@ -513,15 +544,25 @@ func make_sprites() -> Node2D:
 ## }}
 ## [/codeblock][br][br]
 ##
+## You can control what is considered "flat" by adjusting the
+## [param flat_max_depth] value, which defaults to [code]0.1[/code]. Optionally,
+## you can also include any flat geometry by passing [code]true[/code]
+## to [param include_complex_meshes]. However, this will create an entry with
+## a [code]'mesh'[/code] key and a [MeshInstance2D] value instead of a texture.
+## [i](As of Godot 4.3, [MeshTexture]s are broken in most use cases.)[/i][br][br]
+##
 ## [b][method BamParser.parse] must be called first.[/b][br][br]
 ##
-## [b]NOTE:[/b] The position and scale are the values found in the original BAM
-## geom. For example, if you have a BAM file for a GUI that already has its
-## elements pre-placed, you could use this method to attach several [TextureRect]s
-## to a parent [Control] node and set the position and scale of each child to match
-## accordingly. Just keep in mind that these textures are often very big by default
-## -- scaling a parent [Control] node as needed is recommended. 
-func make_atlas_textures() -> Dictionary:
+## [b]NOTE:[/b] The [code]'position'[/code] and [code]'scale'[/code] values in
+## each entry are the values found in the original geometry. As an example, if
+## you were creating a UI with [Control] nodes, and you had a BAM file with UI
+## elements that were already pre-placed, you could use the entries returned
+## from this method to create several [TextureRect]s, [TextureButton]s, etc.,
+## and setting their position / scale should re-create the GUI seen in the BAM
+## file accurately. Just keep in mind that these textures are often very big by
+## default -- scaling with a parent [Control] node is recommended, if needed.
+## update their position and scale
+func make_2d_entries(include_complex_meshes := false, flat_max_depth := 0.1) -> Dictionary:
 	assert(
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
@@ -536,7 +577,8 @@ func make_atlas_textures() -> Dictionary:
 		for child in node.get_children():
 			textures.merge(check_children.call(check_children, child))
 		
-		if node is not MeshInstance3D or node.get_aabb().get_shortest_axis_size() >= 0.1:
+		if (node is not MeshInstance3D or
+				node.get_aabb().get_shortest_axis_size() >= flat_max_depth):
 			return textures
 			
 		var mesh_instance := node as MeshInstance3D
@@ -547,43 +589,68 @@ func make_atlas_textures() -> Dictionary:
 		match aabb.get_shortest_axis_index():
 			0:
 				mesh_rect = Vector2(aabb.size.y, aabb.size.z)
-				mesh_center = Vector2(aabb_center.y, aabb_center.z)
+				mesh_center = Vector2(aabb_center.y, -aabb_center.z)
 			1:
 				mesh_rect = Vector2(aabb.size.x, aabb.size.z)
-				mesh_center = Vector2(aabb_center.x, aabb_center.z)
+				mesh_center = Vector2(aabb_center.x, -aabb_center.z)
 			2:
 				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
-				mesh_center = Vector2(aabb_center.x, aabb_center.y)
-
+				mesh_center = Vector2(aabb_center.x, -aabb_center.y)
+		
 		for i in range(mesh_instance.mesh.get_surface_count()):
 			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
 			var material := mesh_instance.mesh.surface_get_material(i)
 			if material.albedo_texture:
 				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
-				if uvs.size() != 4:
-					continue
-					
-				var texture := AtlasTexture.new()
-				texture.atlas = material.albedo_texture
-				var size := texture.atlas.get_size()
-				texture.region = Rect2(uvs.min() * size, Vector2(0, 0))
-				texture.region.end = uvs.max() * size
+				# Going from meters -> pixels will severly decrease the size
+				# of the outputted node, so we'll need an actual conversion.
+				# Let's do the default conversion for a Sprite3D:
+				#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
+				var m2px := 100
+				
 				var transform: Transform3D
 				var curr_node: Node = node
 				while curr_node != model:
 					transform *= curr_node.transform
 					curr_node = curr_node.get_parent()
-				var scale := (mesh_rect / texture.region.size) * size
+				var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
 				
-				textures[mesh_instance.name] = {
-					'texture': texture,
-					'position': (
-						Vector2(transform.origin.x, -transform.origin.y) * size  # Position on mesh
-						- ((texture.get_size() * scale) / 2)  # Center origin (instead of top-left)
-						- (mesh_center * size)  # Offset "center" according to mesh center offset
-					),
-					'scale': scale,
-				}
+				if uvs.size() == 4:
+					# This is just a simple square, and likely represents a
+					# texture card with a 1:1 UV map -- so let's just make
+					# an atlas texture.
+					var texture := AtlasTexture.new()
+					texture.atlas = material.albedo_texture
+					var texture_size: Vector2 = material.albedo_texture.get_size()
+					texture.region = Rect2(uvs.min() * texture_size, Vector2(0, 0))
+					texture.region.end = uvs.max() * texture_size
+					var scale := (mesh_rect / texture.region.size) * m2px
+					textures[mesh_instance.name] = {
+						'texture': texture,
+						'position': (
+							# Position on mesh
+							position
+							# Center origin (instead of top-left)
+							- ((texture.get_size() * scale) / 2)
+							# Offset "center" according to mesh center offset
+							+ (mesh_center * m2px)
+						),
+						'scale': scale
+					}
+				elif include_complex_meshes:
+					# This shape is more complex than just a square, but it is
+					# still flat -- since we were requested to, we'll make
+					# a MeshInstance2D node for it.
+					var mesh_2d := MeshInstance2D.new()
+					mesh_2d.mesh = mesh_instance.mesh
+					mesh_2d.name = mesh_instance.name
+					mesh_2d.texture = material.albedo_texture
+					textures[mesh_instance.name] = {
+						'mesh': mesh_2d,
+						'position': position - ((mesh_rect) / 2),  # center origin
+						'scale': Vector2(m2px, -m2px)
+					}
+				
 		return textures
 	
 	converting_to_resource = false

@@ -37,6 +37,16 @@ func _get_import_options(path, preset_index):
 			'name': 'scale',
 			'default_value': Vector2(1, 1),
 			'property_hint': PROPERTY_HINT_LINK,
+		},
+		{
+			'name': 'include_complex_meshes',
+			'default_value': true
+		},
+		{
+			'name': 'max_depth',
+			'default_value': 0.1,
+			'property_hint': PROPERTY_HINT_RANGE,
+			'hint_string': '0.001,1,0.001,or_greater'
 		}
 	]
 		
@@ -77,12 +87,12 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 	assert(parser.objects.size() > 0)
 	
 	var scene = PackedScene.new()
-	var sprite_holder := parser.make_sprites()
+	var node_2d := parser.make_2d(options['include_complex_meshes'], options['max_depth'])
 	if parser.error:
 		return parser.error
-	for child in sprite_holder.find_children('*', "", true, false):
-		child.set_owner(sprite_holder)
-	scene.pack(sprite_holder)
+	for child in node_2d.find_children('*', "", true, false):
+		child.set_owner(node_2d)
+	scene.pack(node_2d)
 	parser.cleanup()
 
 	var filename = save_path + "." + _get_save_extension()
