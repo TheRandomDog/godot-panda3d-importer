@@ -17,14 +17,14 @@ func parse_object_data() -> void:
 	for i in range(parts_count):
 		bam_parser.decode_pointer()
 
-## Converts this Character BAM Object into a [VisualInstance3D] node with a
-## [Skeleton3D] child node.
-func convert() -> VisualInstance3D:
+## Converts this Character BAM Object into a
+## [Node3D] with a [Skeleton3D] child node.
+func convert() -> Node3D:
 	var skeleton := generate_skeleton()
-	var node := VisualInstance3D.new()
+	var node := Node3D.new()
 	node.add_child(skeleton)
 	skeleton.owner = node
-	convert_node(node, skeleton)
+	_convert_node(node, skeleton)
 	return node
 
 ## Creates and returns a [Skeleton3D] node using this BAM Object's part bundle data.

@@ -8,10 +8,10 @@ class_name EggCharacterGroup
 ## Joints that are associated with this character.
 var joints: Array[EggJoint]
 
-## Converts this Character entry into a [VisualInstance3D] node with a
-## [Skeleton3D] child node.
-func convert() -> VisualInstance3D:
-	var node := VisualInstance3D.new()
+## Converts this Character entry into a [Node3D]
+## with a [Skeleton3D] child node.
+func convert() -> Node3D:
+	var node := Node3D.new()
 	var skeleton := generate_skeleton()
 	if skeleton.get_bone_count() > 0:
 		node.add_child(skeleton)
@@ -23,7 +23,7 @@ func convert() -> VisualInstance3D:
 		if polygons:
 			node.add_child(convert_model())
 		
-	convert_node(node, skeleton)
+	_convert_node(node, skeleton)
 	return node
 
 func read_child(child: Dictionary):

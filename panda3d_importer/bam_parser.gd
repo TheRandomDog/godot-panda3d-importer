@@ -409,9 +409,9 @@ func resolve_objects_at_current_depth() -> void:
 			resolve_object(object)
 		objects_to_resolve = unresolved_objects[current_object_stream_depth].values()
 
-## Converts the contents of the BAM file to a [VisualInstance3D] node.
+## Converts the contents of the BAM file to a [Node3D].
 ## [b][method BamParser.parse] must be called first.[/b]
-func make_model() -> VisualInstance3D:
+func make_model() -> Node3D:
 	assert(
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
@@ -546,7 +546,7 @@ func make_2d(include_complex_meshes := true, flat_max_depth := 0.1) -> Node2D:
 ##
 ## You can control what is considered "flat" by adjusting the
 ## [param flat_max_depth] value, which defaults to [code]0.1[/code]. Optionally,
-## you can also include any flat geometry by passing [code]true[/code]
+## you can also include [i]any[/i] flat geometry by passing [code]true[/code]
 ## to [param include_complex_meshes]. However, this will create an entry with
 ## a [code]'mesh'[/code] key and a [MeshInstance2D] value instead of a texture.
 ## [i](As of Godot 4.3, [MeshTexture]s are broken in most use cases.)[/i][br][br]
@@ -561,7 +561,6 @@ func make_2d(include_complex_meshes := true, flat_max_depth := 0.1) -> Node2D:
 ## and setting their position / scale should re-create the GUI seen in the BAM
 ## file accurately. Just keep in mind that these textures are often very big by
 ## default -- scaling with a parent [Control] node is recommended, if needed.
-## update their position and scale
 func make_2d_entries(include_complex_meshes := false, flat_max_depth := 0.1) -> Dictionary:
 	assert(
 		objects[1].object_type.name == 'ModelRoot',

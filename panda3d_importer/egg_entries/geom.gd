@@ -84,7 +84,7 @@ func convert() -> Node3D:
 	else:
 		node = convert_model()
 	
-	convert_node(node)
+	_convert_node(node)
 	return node
 
 func get_collision_mesh_array() -> Array:

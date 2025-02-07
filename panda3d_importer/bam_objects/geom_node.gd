@@ -67,5 +67,5 @@ func convert() -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = mesh
 	# Apply the standard conversions for a PandaNode now.
-	convert_node(mesh_instance)
+	_convert_node(mesh_instance)
 	return mesh_instance

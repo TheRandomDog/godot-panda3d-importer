@@ -46,17 +46,17 @@ static func make_group(egg_parser: EggParser, entry: Dictionary) -> EggGroup:
 			return EggGeomGroup.new(egg_parser, entry)
 	return EggGroup.new(egg_parser, entry)
 
-## Converts this Group into a Godot [VisualInstance3D] node. [br][br]
+## Converts this Group into a Godot [Node3D]. [br][br]
 ##
 ## The contents of the group determine specifically what node gets generated.
 ## For example, if the group contains polygon data, this method will instead
 ## return a [MeshInstance3D].
 func convert() -> Node3D:
-	var node = VisualInstance3D.new()
-	convert_node(node)
+	var node := Node3D.new()
+	_convert_node(node)
 	return node
 
-func convert_node(node: Node3D, parent: Node3D = null) -> void:
+func _convert_node(node: Node3D, parent: Node3D = null) -> void:
 	if not parent:
 		parent = node
 	

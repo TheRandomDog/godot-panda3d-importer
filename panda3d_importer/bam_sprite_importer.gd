@@ -8,7 +8,7 @@ func _get_importer_name():
 	return "panda3d.bam.sprite"
 
 func _get_visible_name():
-	return "BAM Model as Sprite2Ds"
+	return "BAM Model (2D)"
 
 func _get_recognized_extensions():
 	return ["bam", "pz"]

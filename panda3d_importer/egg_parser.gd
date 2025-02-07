@@ -152,13 +152,12 @@ func set_coordinate_system(entry: Dictionary):
 		for vertex in pool.verticies.values():
 			vertex.coordinate_system = coordinate_system
 	
-func make_model() -> VisualInstance3D:
-	var node = VisualInstance3D.new()
+func make_model() -> Node3D:
+	var node := Node3D.new()
 	node.name = source_file_name.get_file()
 	
 	converting_to_resource = true
 	for group in root_groups:
-		print('EGG PARSER here, looking at group %s...' % group.entry_name)
 		var child_node = group.convert()
 		if child_node:
 			node.add_child(child_node)
@@ -170,7 +169,6 @@ func make_animation() -> Animation:
 	var animation
 	converting_to_resource = true
 	for table in root_tables:
-		print('EGG PARSER here, looking at table %s...' % table.name())
 		var bundle = table.bundles[0]
 		animation = bundle.convert_animation()
 	converting_to_resource = false
