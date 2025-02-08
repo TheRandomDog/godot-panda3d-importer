@@ -85,15 +85,21 @@ func parse_object_data() -> void:
 ## Applies [PandaRenderEffect] objects to a given [param node] inheriting [Node3D].
 func _convert_effects(node: Node3D) -> void:
 	for effect in o_effects.o_effects:
-		effect.apply_to_node(node)
+		effect.apply_to_node(node, self)
 
 ## Converts this PandaNode into a Godot node. [br][br] Typically, this will be
 ## a [Node3D] or a node that inherits it. BAM Objects that inherit
 ## PandaNode can override this method to customize the conversion process.
 func convert() -> Node3D:
-	var node := Node3D.new()
+	var node := _get_godot_node()
 	_convert_node(node)
 	return node
+
+func _get_godot_node() -> Node3D:
+	for effect in o_effects.o_effects:
+		if effect is PandaCharacterJointEffect:
+			return BoneAttachment3D.new()
+	return Node3D.new()
 
 ## Applies common changes to a given [param node] inheriting [Node3D],
 ## and recursively converts any child [PandaNode] objects and adds them as
@@ -110,7 +116,7 @@ func _convert_node(node: Node3D, parent: Node3D = null) -> void:
 	if name:
 		node.name = name
 	# Apply our transform
-	o_transform.apply_to_node(node)
+	o_transform.apply_to_node(node, self)
 
 	# TODO: Process PandaRenderState, perhaps by tossing the node to it?
 	_convert_effects(node)

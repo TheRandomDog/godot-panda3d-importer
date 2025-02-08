@@ -49,7 +49,7 @@ func parse_object_data() -> void:
 		matrix = bam_parser.decode_projection()
 
 ## Applies the transform to a given [param node].
-func apply_to_node(node: Node3D) -> void:
+func apply_to_node(node: Node3D, panda_node: PandaNode) -> void:
 	var transform: Transform3D
 	if flags == CommonFlags.IDENTITY:
 		transform = Transform3D.IDENTITY

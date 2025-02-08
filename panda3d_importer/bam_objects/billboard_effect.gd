@@ -30,7 +30,7 @@ func apply_to_surface(surface: Surface):
 	# TEMP
 	surface.add_billboard()
 
-func apply_to_node(node: Node3D):
+func apply_to_node(node: Node3D, panda_node: PandaNode) -> void:
 	return
 	if off:
 		return

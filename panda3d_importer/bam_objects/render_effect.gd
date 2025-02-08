@@ -9,5 +9,5 @@ func parse_object_data() -> void:
 func apply_to_surface(surface: Surface) -> void:
 	pass
 
-func apply_to_node(node: Node3D) -> void:
+func apply_to_node(node: Node3D, panda_node: PandaNode) -> void:
 	pass
