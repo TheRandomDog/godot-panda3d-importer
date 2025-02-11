@@ -25,6 +25,8 @@ func convert() -> Node3D:
 	node.add_child(skeleton)
 	skeleton.owner = node
 	_convert_node(node, skeleton)
+	for mesh in skeleton.find_children('*', 'MeshInstance3D', true, false):
+		mesh.skeleton = mesh.get_path_to(skeleton)
 	return node
 
 ## Creates and returns a [Skeleton3D] node using this BAM Object's part bundle data.
