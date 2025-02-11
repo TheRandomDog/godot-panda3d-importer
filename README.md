@@ -110,7 +110,7 @@ The following is a list of features and their support level, with the following 
 |Backfaces|🔴 No
 |Billboards|🟡 If a PandaNode has a Billboard RenderEffect, the corresponding Godot node will have its `BaseMaterial3D.billboard_mode` set to `BaseMaterial3D.BILLBOARD_FIXED_Y`. The resulting behavior may not be 1:1.
 |Lighting|🔴 No (By default, converted geometry has no shading set.)
-|Level of Detail (LOD)|🔴 No
+|Level of Detail (LOD)|🟢 Yes, the relevant child meshes will have their `GeometryInstance3D.visibility_range_*` values set to the LODNode's switch's in/out values.
 |Characters|🟡 Yes, will convert joint data to a **Skeleton3D**. Initial transform is used for bone rest poses while default values of MovingParts are ignored.
 |Animation|🟡 Yes, will convert animated joint transform data to an **Animation** resource. Only one animation per file is supported.<br><br>Only animations with an underlying matrix transformation table using new-style HPR values are currently supported.<br>Shear animations are **not** supported.<br><br>Detecting BAM file contents is not automatic: you must choose the **BAM Animation** importer or call `BamParser.make_animation()`.
 |Fonts|🟢 BAM files containing fonts pre-generated with Panda3D's `egg-mkfont` tool can be imported as **FontFile** resources.<br><br>Detecting BAM file contents is not automatic: you must choose the **BAM Font** importer or call `BamParser.make_font()`.
