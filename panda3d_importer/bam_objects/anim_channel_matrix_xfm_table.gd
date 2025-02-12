@@ -100,7 +100,9 @@ func get_animation_data() -> Dictionary:
 			var basis = Panda2Godot.get_basis_from_hpr(_get_table_slice(frame, 6))
 			data['rotation'].append(Quaternion(basis))
 		if has_scale_data:
-			data['scale'].append(
-				_get_table_slice(frame, 0, 1.0) * bam_parser.rotation_matrix
-			)
+			data['scale'].append(Vector3(
+				_get_table_frame(frame, 0, 1.0),
+				_get_table_frame(frame, 2, 1.0),
+				_get_table_frame(frame, 1, 1.0)
+			))  # Manually switch Y and Z here, as this isn't a rotation
 	return data
