@@ -480,27 +480,26 @@ func make_2d(include_complex_meshes := true, flat_max_depth := 0.1) -> Node2D:
 			2:
 				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
 				mesh_center = Vector2(aabb_center.x, -aabb_center.y)
+				
+		# Going from meters -> pixels will severly decrease the size
+		# of the outputted node, so we'll need an actual conversion.
+		# Let's do the default conversion for a Sprite3D:
+		#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
+		var m2px := 100
 		
 		for i in range(mesh_instance.mesh.get_surface_count()):
 			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
 			var material := mesh_instance.mesh.surface_get_material(i)
+			
+			var transform: Transform3D
+			var curr_node: Node = node
+			while curr_node != model:
+				transform *= curr_node.transform
+				curr_node = curr_node.get_parent()
+			var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
+			
 			if material.albedo_texture:
-				var new_node: Node2D
 				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
-				# Going from meters -> pixels will severly decrease the size
-				# of the outputted node, so we'll need an actual conversion.
-				# Let's do the default conversion for a Sprite3D:
-				#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
-				var m2px := 100
-				
-				var transform: Transform3D
-				var curr_node: Node = node
-				while curr_node != model:
-					transform *= curr_node.transform
-					curr_node = curr_node.get_parent()
-				var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
-				
-				# What type of 2D node are we going to make?
 				if uvs.size() == 4:
 					# This is just a simple square, and likely represents a
 					# texture card with a 1:1 UV map -- ideal for a sprite.
@@ -515,17 +514,18 @@ func make_2d(include_complex_meshes := true, flat_max_depth := 0.1) -> Node2D:
 					sprite.scale = (mesh_rect / sprite.region_rect.size) * m2px
 					sprite.offset = (mesh_center * sprite.region_rect.size) / mesh_rect
 					return sprite
-				elif include_complex_meshes:
-					# This shape is more complex than just a square, but it is
-					# still flat -- since we were requested to, we'll make
-					# a MeshInstance2D node for it.
-					var mesh_2d := MeshInstance2D.new()
-					mesh_2d.name = node.name
-					mesh_2d.mesh = mesh_instance.mesh
-					mesh_2d.texture = material.albedo_texture
-					mesh_2d.position = position
-					mesh_2d.scale = Vector2(m2px, -m2px)
-					return mesh_2d
+					
+			if include_complex_meshes:
+				# This mesh either does not have a texture or is more complex
+				# than just a square, but it is still flat -- since we were
+				# requested to, we'll make a MeshInstance2D node for it.
+				var mesh_2d := MeshInstance2D.new()
+				mesh_2d.name = node.name
+				mesh_2d.mesh = mesh_instance.mesh
+				mesh_2d.texture = material.albedo_texture
+				mesh_2d.position = position
+				mesh_2d.scale = Vector2(m2px, -m2px)
+				return mesh_2d
 		return null
 	
 	converting_to_resource = false
@@ -595,25 +595,25 @@ func make_2d_entries(include_complex_meshes := false, flat_max_depth := 0.1) -> 
 			2:
 				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
 				mesh_center = Vector2(aabb_center.x, -aabb_center.y)
+				
+		# Going from meters -> pixels will severly decrease the size
+		# of the outputted node, so we'll need an actual conversion.
+		# Let's do the default conversion for a Sprite3D:
+		#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
+		var m2px := 100
+		
+		var transform: Transform3D
+		var curr_node: Node = node
+		while curr_node != model:
+			transform *= curr_node.transform
+			curr_node = curr_node.get_parent()
+		var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
 		
 		for i in range(mesh_instance.mesh.get_surface_count()):
 			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
 			var material := mesh_instance.mesh.surface_get_material(i)
 			if material.albedo_texture:
 				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
-				# Going from meters -> pixels will severly decrease the size
-				# of the outputted node, so we'll need an actual conversion.
-				# Let's do the default conversion for a Sprite3D:
-				#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
-				var m2px := 100
-				
-				var transform: Transform3D
-				var curr_node: Node = node
-				while curr_node != model:
-					transform *= curr_node.transform
-					curr_node = curr_node.get_parent()
-				var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
-				
 				if uvs.size() == 4:
 					# This is just a simple square, and likely represents a
 					# texture card with a 1:1 UV map -- so let's just make
@@ -636,19 +636,21 @@ func make_2d_entries(include_complex_meshes := false, flat_max_depth := 0.1) -> 
 						),
 						'scale': scale
 					}
-				elif include_complex_meshes:
-					# This shape is more complex than just a square, but it is
-					# still flat -- since we were requested to, we'll make
-					# a MeshInstance2D node for it.
-					var mesh_2d := MeshInstance2D.new()
-					mesh_2d.mesh = mesh_instance.mesh
-					mesh_2d.name = mesh_instance.name
-					mesh_2d.texture = material.albedo_texture
-					textures[mesh_instance.name] = {
-						'mesh': mesh_2d,
-						'position': position - ((mesh_rect) / 2),  # center origin
-						'scale': Vector2(m2px, -m2px)
-					}
+					continue
+					
+			if include_complex_meshes:
+				# This mesh either does not have a texture or is more complex
+				# than just a square, but it is still flat -- since we were
+				# requested to, we'll make a MeshInstance2D node for it.
+				var mesh_2d := MeshInstance2D.new()
+				mesh_2d.mesh = mesh_instance.mesh
+				mesh_2d.name = mesh_instance.name
+				mesh_2d.texture = material.albedo_texture
+				textures[mesh_instance.name] = {
+					'mesh': mesh_2d,
+					'position': position - ((mesh_rect) / 2),  # center origin
+					'scale': Vector2(m2px, -m2px)
+				}
 				
 		return textures
 	
