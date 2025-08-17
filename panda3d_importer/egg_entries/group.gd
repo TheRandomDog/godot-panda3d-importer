@@ -6,7 +6,7 @@ class_name EggGroup
 ## group contains certain elements. If a group has polygon data, [EggGeomGroup]
 ## is used. [EggCharacterGroup] is used if a group has character data.
 
-const SwitchManager = preload("../switch_manager.gd")
+const ExclusiveChildNode3D = preload("../extras/exclusive_child_node_3d.gd")
 
 ## [code]true[/code] if there is a [code]<Switch>[/code] child entry in this group.
 ## In Panda3D, this is an indicator that child groups should be treated similar
@@ -64,15 +64,29 @@ func _convert_node(node: Node3D, parent: Node3D = null) -> void:
 		var light_instance := light.make_light(egg_parser)
 		node.add_child(light_instance)
 		
-	if switch_enabled:
-		var switch_manager := SwitchManager.new()
-		switch_manager.name = 'SwitchManager'
-		switch_manager.fps = fps
-		node.add_child(switch_manager, false, Node.INTERNAL_MODE_BACK)
-		
 	gather_subgroups(parent)
 	if entry_name:
 		node.name = entry_name
+	if switch_enabled:
+		node.set_script(ExclusiveChildNode3D)
+		if fps:
+			_add_sequence_player(node)
+		
+func _add_sequence_player(node: Node3D) -> void:
+	var anim_interface := PandaAnimInterface.new()
+	anim_interface.play_mode = PandaAnimInterface.PlayMode.LOOP
+	anim_interface.to_frame = node.get_child_count()
+	anim_interface.frame_rate = fps
+
+	var animation := Animation.new()
+	for child: Node3D in node.find_children('*', 'Node3D', false, false):
+		var track_index := animation.add_track(Animation.TYPE_METHOD)
+		animation.track_set_path(track_index, node.get_path_to(child))
+		animation.track_insert_key(track_index, anim_interface.get_frame_time(track_index), {'method': 'show', 'args': []})
+	var animation_player := anim_interface.make_animation_player(animation)
+	animation_player.name = 'SequencePlayer'
+	node.add_child(animation_player)
+	node.move_child(animation_player, 0)
 
 ## Converts this [EggGroup] into a [FontFile] resoucre.
 ##

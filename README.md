@@ -1,5 +1,5 @@
-# Panda3D Native File Types Importer for Godot 4.3+
-This is an add-on for Godot 4.3+ that allows you to import or read native Panda3D file types into Godot. This includes:
+# Panda3D Native File Types Importer for Godot 4.4+
+This is an add-on for Godot 4.4+ that allows you to import or read native Panda3D file types into Godot. This includes:
 
  - **Import:** .egg (Egg) files and .bam (BAM) files
 	 - 3D Models as **PackedScene** resources with the Egg/BAM Model importer.
