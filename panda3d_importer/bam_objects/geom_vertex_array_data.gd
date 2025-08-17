@@ -34,7 +34,7 @@ func _gather_mesh_data() -> Dictionary:
 	var data = {
 		'vertices': PackedVector3Array(),
 		'indexes': [],
-		'texcoords': PackedVector2Array(),
+		'texcoords': {},
 		'normals': PackedVector3Array(),
 		'colors': PackedColorArray(),
 		'transform_blend_indexes': [],
@@ -91,7 +91,9 @@ func _gather_mesh_data() -> Dictionary:
 					# We'll flip the V coordinate here.
 					var texcoords = bam_parser.decode_vector2(column['numeric_type_decoder'])
 					texcoords.y = 1 - texcoords.y
-					data['texcoords'].append(texcoords)
+					if column_name not in data['texcoords']:
+						data['texcoords'][column_name] = PackedVector2Array()
+					data['texcoords'][column_name].append(texcoords)
 				PandaGeom.Contents.INDEX:
 					var index = column['numeric_type_decoder'].call()
 					if column_name == 'transform_blend':

@@ -58,7 +58,15 @@ func create_base_mesh_array() -> Array:
 		if 'vertices' in cleaned_data:
 			mesh_array[Mesh.ARRAY_VERTEX] = cleaned_data['vertices']
 		if 'texcoords' in cleaned_data:
-			mesh_array[Mesh.ARRAY_TEX_UV] = cleaned_data['texcoords']
+			var texcoord_names: Array[String]
+			texcoord_names.assign(cleaned_data['texcoords'].keys())
+			if 'texcoord' in texcoord_names:
+				mesh_array[Mesh.ARRAY_TEX_UV] = cleaned_data['texcoords']['texcoord']
+				texcoord_names.erase('texcoord')
+			elif texcoord_names:
+				mesh_array[Mesh.ARRAY_TEX_UV] = cleaned_data['texcoords'][texcoord_names.pop_back()]
+			if texcoord_names:
+				mesh_array[Mesh.ARRAY_TEX_UV2] = cleaned_data['texcoords'][texcoord_names.pop_back()]
 		if 'normals' in cleaned_data:
 			mesh_array[Mesh.ARRAY_NORMAL] = cleaned_data['normals']
 		if 'tangents' in cleaned_data:
