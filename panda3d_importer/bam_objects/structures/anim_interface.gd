@@ -49,6 +49,10 @@ func make_animation_player(animation: Animation) -> PandaAnimationPlayer:
 			animation.loop_mode = Animation.LOOP_LINEAR
 		PlayMode.PINGPONG:
 			animation.loop_mode = Animation.LOOP_PINGPONG
+	if frame_count:
+		animation.length = get_frame_time(frame_count)
+	else:
+		animation.length = get_frame_time(to_frame)
 			
 	var library := AnimationLibrary.new()
 	library.add_animation('anim', animation)
