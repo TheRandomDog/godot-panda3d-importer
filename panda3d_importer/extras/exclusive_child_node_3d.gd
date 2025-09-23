@@ -1,4 +1,5 @@
 @tool
+@icon('ExclusiveChildNode3D.svg')
 extends Node3D
 
 var current_visible_index := -1
