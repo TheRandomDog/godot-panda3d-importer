@@ -4,7 +4,7 @@ class_name ResourceMultifileFormatLoader
 ## Handles reading Panda3D's Multifile (.mf) file type into a [Multifile] resource.
 
 func _get_recognized_extensions() -> PackedStringArray:
-	return ['mf']
+	return Multifile.EXTENSIONS
 	
 func _get_resource_script_class(path: String) -> String:
 	return 'multifile.gd'

@@ -1,6 +1,8 @@
 extends Resource
 class_name Multifile
 
+const EXTENSIONS := ['mf']
+
 const MAGIC_HEADER = [0x70, 0x6D, 0x66, 0x00, 0x0A, 0x0D]
 const SUBFILE_INDEXES_START = 18
 var file_size_limit: int = 4000000000

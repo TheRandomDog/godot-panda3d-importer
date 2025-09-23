@@ -7,7 +7,7 @@ func _recognize(resource: Resource) -> bool:
 	return resource is Multifile
 
 func _get_recognized_extensions(resource: Resource) -> PackedStringArray:
-	return ['mf']
+	return Multifile.EXTENSIONS
 	
 func _save(resource: Resource, path: String, flags: ResourceSaver.SaverFlags) -> Error:
 	# This is not aimed to be a suitable alternative or replacement to packing
