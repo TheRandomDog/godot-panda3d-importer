@@ -3,13 +3,15 @@ extends RefCounted
 class_name BamParser
 ## A class that can read and parse a BAM file.
 
+const MAX_U16 = 0xFFFF
+const MAX_U32 = 0xFFFFFFFF
+const PIXEL_SIZE := 0.01
+
 enum VertexEndianness { BIG_ENDIAN, LITTLE_ENDIAN }
 enum BamObjectCode { PUSH, POP, ADJUNCT, REMOVE, FILE_DATA }
 enum DependencyType { TEXTURE }
 
 var magic_header := PackedByteArray([0x70, 0x62, 0x6A, 0x00, 0x0A, 0x0D])
-const MAX_U16 = 0xFFFF
-const MAX_U32 = 0xFFFFFFFF
 static var rotation_matrix := Transform3D(
 	Basis().rotated(Vector3(-1, 0, 0), -PI / 2),
 	Vector3()
@@ -37,7 +39,7 @@ func resolve_type(type_index: int) -> BamObjectType:
 
 var object_ids_seen: Array[int]
 # Each index on the array represents stream depth.
-var unresolved_objects: Array[Dictionary] 
+var unresolved_objects: Array[Dictionary]
 var objects: Dictionary
 var resolving_object: BamObject
 var converting_to_resource := false
@@ -46,7 +48,7 @@ func add_unresolved_object(object: BamObject) -> void:
 	if current_object_stream_depth >= unresolved_objects.size():
 		unresolved_objects.resize(current_object_stream_depth + 1)
 	unresolved_objects[current_object_stream_depth][object.object_id] = object
-	
+
 func remove_unresolved_object(object_id: int) -> void:
 	unresolved_objects[current_object_stream_depth].erase(object_id)
 
@@ -54,7 +56,7 @@ func remove_unresolved_object(object_id: int) -> void:
 ## The old state is returned in an Array containing: [[member BamParser.read_contents],
 ## [member BamParser.read_byte_offset], [member BamParser.datagram_size_remaining]].
 ## [br][br]
-## 
+##
 ## This function is useful to start reading other buffered content in a safe way.
 ## It is used by [BamObject]s to read their object data as an example.
 ## [br][br]
@@ -119,7 +121,7 @@ func decode_u16() -> int:
 		read_byte_offset += 2
 		return read
 	return 0
-	
+
 ## Decodes and returns an unsigned int64 from the datagram buffer.
 ##
 ## [br][br][b]NOTE:[/b] This does not include a datagram size check. Do not use.
@@ -127,7 +129,7 @@ func _decode_u64_for_next_size() -> int:
 	var read := read_contents.decode_u32(read_byte_offset)
 	read_byte_offset += 4
 	return read
-		
+
 ## Decodes and returns an unsigned int32 from the datagram buffer.
 func decode_u32() -> int:
 	if attempt_dg_size_check(4):
@@ -135,7 +137,7 @@ func decode_u32() -> int:
 		read_byte_offset += 4
 		return read
 	return 0
-		
+
 ## Decodes and returns a signed int32 from the datagram buffer.
 func decode_s32() -> int:
 	if attempt_dg_size_check(4):
@@ -143,7 +145,7 @@ func decode_s32() -> int:
 		read_byte_offset += 4
 		return read
 	return 0
-		
+
 ## Decodes and returns a float from the datagram buffer.
 func decode_float() -> float:
 	if attempt_dg_size_check(4):
@@ -151,7 +153,7 @@ func decode_float() -> float:
 		read_byte_offset += 4
 		return read
 	return 0.0
-		
+
 ## Decodes and returns a double from the datagram buffer.
 func decode_double() -> float:
 	if attempt_dg_size_check(8):
@@ -302,17 +304,17 @@ func parse(byte_array: PackedByteArray, compressed := false) -> Error:
 	if read_contents.slice(0, 6) != magic_header:
 		return ERR_FILE_UNRECOGNIZED
 	read_byte_offset += 6
-	
+
 	_set_next_datagram_size()
 	version = [decode_u16(), decode_u16()]
-	
+
 	if version >= [5, 0]:
 		vertex_endianness = decode_u8() as VertexEndianness
 	if version >= [6, 27]:
 		use_f64_stdfloats = decode_bool()
 	if version < [6, 21]:
 		use_object_stream_codes = false
-		
+
 	#print('BAM Version: ', version)
 	#print('Vertex Endianness: ', vertex_endianness)
 	#print('Use 64-bit floats: ', use_f64_stdfloats)
@@ -348,7 +350,7 @@ func next_object_code() -> int:
 	if not use_object_stream_codes:
 		return BamObjectCode.ADJUNCT
 	return decode_u8()
-	
+
 func parse_object_type() -> BamObjectType:
 	var type_index := decode_u16()  # TODO: u16 unless we're out of them
 	if type_index == 0:
@@ -356,13 +358,13 @@ func parse_object_type() -> BamObjectType:
 	elif type_index not in types_seen:
 		var type_name := decode_string()
 		var parent_types: Array[BamObjectType] = []
-		
+
 		var parent_type_count := decode_u8()
 		for i in range(parent_type_count):
 			var parent_type = self.parse_object_type()
 			if parent_type:
 				parent_types.append(parent_type)
-		
+
 		var new_type_entry := BamObjectType.new(type_index, type_name, parent_types)
 		types_seen[type_index] = new_type_entry
 		return new_type_entry
@@ -375,10 +377,10 @@ func parse_object() -> void:
 	var remaining_data := take_remaining()
 	ensure(object_id not in object_ids_seen, "Saw object ID %s twice!" % object_id)
 	object_ids_seen.append(object_id)
-	
+
 	var object := BamObject.new(self, type, object_id, remaining_data)
 	add_unresolved_object(object)
-	
+
 func parse_object_id() -> int:
 	return decode_pointer()
 
@@ -416,7 +418,7 @@ func make_model() -> Node3D:
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
 	)
-	
+
 	converting_to_resource = true
 	var model_root := objects[1] as PandaModelRoot
 	var result := model_root.convert()
@@ -424,238 +426,97 @@ func make_model() -> Node3D:
 	return result
 
 ## Converts the contents of the BAM file to a [Node2D]. Only flat geometry
-## will be converted, anything else will be ignored. Simple geometry that just
-## represents a square with a 1:1 UV map (like those used for texture cards)
-## will be converted to a [Sprite2D] child, whereas anything more complex
-## (but still flat) will be converted to a [MeshInstance2D] child.[br][br]
+## will be converted into [MeshInstance2D] children; anything else will be
+## ignored. You can also control what is considered "flat" by adjusting the
+## [param flat_max_depth] value, which defaults to [code]0.1[/code].[br][br]
 ##
-## You can choose to only convert simple geometry by passing [code]false[/code]
-## to [param include_complex_meshes]. You can also control what is considered
-## "flat" by adjusting the [param flat_max_depth] value, which defaults to
-## [code]0.1[/code].[br][br]
-##
-## [b][method BamParser.parse] must be called before calling this method.[/b][br][br]
-##
-## [b]NOTE:[/b] The size of the outputted Node2D can often be very big by
-## default. The scale value of a sprite/mesh is already set to mirror what was
-## present in the BAM geom. As a result, if you want to scale a specific child,
-## make sure to respect its aspect ratio or parent it under another node for
-## scaling instead.
-func make_2d(include_complex_meshes := true, flat_max_depth := 0.1) -> Node2D:
+## [b][method BamParser.parse] must be called before calling this method.[/b]
+func make_2d(flat_max_depth := 0.1) -> Node2D:
 	assert(
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
 	)
-	
+
 	converting_to_resource = true
 	var model_root := objects[1] as PandaModelRoot
 	var model := model_root.convert()
-	
+
 	var node_2d := Node2D.new()
 	node_2d.name = model_root.name
-	node_2d.scale = configuration['parser']['make_sprite_scale']
-	
+	node_2d.scale = configuration['parser']['make_2d_scale']
+
 	var check_children = func(check_children: Callable, node: Node) -> Node2D:
 		for child in node.get_children():
 			var sprite := check_children.call(check_children, child)
 			if sprite:
 				node_2d.add_child(sprite)
-				
+
 		if (node is not MeshInstance3D or
 				node.get_aabb().get_shortest_axis_size() >= flat_max_depth):
 			return null
-			
-		var mesh_instance := node as MeshInstance3D
-		var aabb := mesh_instance.get_aabb()
-		var aabb_center := aabb.get_center()
-		var mesh_rect: Vector2
-		var mesh_center: Vector2
-		match aabb.get_shortest_axis_index():
-			0:
-				mesh_rect = Vector2(aabb.size.y, aabb.size.z)
-				mesh_center = Vector2(aabb_center.y, -aabb_center.z)
-			1:
-				mesh_rect = Vector2(aabb.size.x, aabb.size.z)
-				mesh_center = Vector2(aabb_center.x, -aabb_center.z)
-			2:
-				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
-				mesh_center = Vector2(aabb_center.x, -aabb_center.y)
-				
+
+		var get_mesh_rect = func(aabb: AABB, x: Vector3.Axis, y: Vector3.Axis) -> Rect2:
+			return Rect2(aabb.position[x], aabb.position[y], aabb.size[x], aabb.size[y])
+
+		var get_mesh_center = func(aabb: AABB, x: Vector3.Axis, y: Vector3.Axis) -> Rect2:
+			return Rect2(aabb.position[x], aabb.position[y], aabb.size[x], aabb.size[y])
+
 		# Going from meters -> pixels will severly decrease the size
 		# of the outputted node, so we'll need an actual conversion.
-		# Let's do the default conversion for a Sprite3D:
-		#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
-		var m2px := 100
-		
+		var mesh_scale := Vector3.ONE * (1.0 / PIXEL_SIZE)
+		var mesh_instance := node as MeshInstance3D
+		match mesh_instance.get_aabb().get_shortest_axis_index():
+			Vector3.AXIS_X, Vector3.AXIS_Y:
+				mesh_scale.z *= -1
+			Vector3.AXIS_Z:
+				mesh_scale.y *= -1
+
 		for i in range(mesh_instance.mesh.get_surface_count()):
 			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
 			var material := mesh_instance.mesh.surface_get_material(i)
-			
+
 			var transform: Transform3D
 			var curr_node: Node = node
 			while curr_node != model:
 				transform *= curr_node.transform
 				curr_node = curr_node.get_parent()
-			var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
-			
-			if material.albedo_texture:
-				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
-				if uvs.size() == 4:
-					# This is just a simple square, and likely represents a
-					# texture card with a 1:1 UV map -- ideal for a sprite.
-					var sprite := Sprite2D.new()
-					sprite.name = node.name
-					sprite.texture = material.albedo_texture
-					sprite.position = position
-					var texture_size: Vector2 = sprite.texture.get_size()
-					sprite.region_rect = Rect2(uvs.min() * texture_size, Vector2(0, 0))
-					sprite.region_rect.end = uvs.max() * texture_size
-					sprite.region_enabled = true
-					sprite.scale = (mesh_rect / sprite.region_rect.size) * m2px
-					sprite.offset = (mesh_center * sprite.region_rect.size) / mesh_rect
-					return sprite
-					
-			if include_complex_meshes:
-				# This mesh either does not have a texture or is more complex
-				# than just a square, but it is still flat -- since we were
-				# requested to, we'll make a MeshInstance2D node for it.
-				var mesh_2d := MeshInstance2D.new()
-				mesh_2d.name = node.name
-				mesh_2d.mesh = mesh_instance.mesh
-				mesh_2d.texture = material.albedo_texture
-				mesh_2d.position = position
-				mesh_2d.scale = Vector2(m2px, -m2px)
-				return mesh_2d
+			var position := Vector2(transform.origin.x, -transform.origin.y) * mesh_scale.x
+
+			var scaled_mesh := ArrayMesh.new()
+			for surface in mesh_instance.mesh.get_surface_count():
+				var arrays := mesh_instance.mesh.surface_get_arrays(surface)
+				var vertices = arrays[Mesh.ARRAY_VERTEX]
+				for v in vertices.size():
+					vertices[v] *= mesh_scale
+				arrays[Mesh.ARRAY_VERTEX] = vertices
+				scaled_mesh.add_surface_from_arrays(
+					mesh_instance.mesh.surface_get_primitive_type(surface),
+					arrays,
+				)
+
+			var aabb := scaled_mesh.get_aabb()
+			var aabb_center := aabb.get_center()
+			var mesh_rect: Rect2
+			match aabb.get_shortest_axis_index():
+				Vector3.AXIS_X:
+					mesh_rect = get_mesh_rect.call(aabb, Vector3.AXIS_Y, Vector3.AXIS_Z)
+				Vector3.AXIS_Y:
+					mesh_rect = get_mesh_rect.call(aabb, Vector3.AXIS_X, Vector3.AXIS_Z)
+				Vector3.AXIS_Z:
+					mesh_rect = get_mesh_rect.call(aabb, Vector3.AXIS_X, Vector3.AXIS_Y)
+
+			var mesh_2d := MeshInstance2D.new()
+			mesh_2d.name = node.name
+			mesh_2d.mesh = scaled_mesh
+			mesh_2d.texture = material.albedo_texture
+			mesh_2d.position = position
+			mesh_2d.set_meta('rect', mesh_rect)
+			return mesh_2d
 		return null
-	
+
 	converting_to_resource = false
 	check_children.call(check_children, model)
 	return node_2d
-
-## Converts the contents of the BAM file to a [Dictionary] that has an entry
-## containing an [AtlasTexture] for every instance of simple flat geometry
-## (essentially square meshes with a 1:1 UV map, like those used for texture
-## cards). These entries are structured as follows:
-## [codeblock]
-## {'node_name': {
-##     'texture': AtlasTexture,
-##     'position': Vector2
-##     'scale': Vector2
-## }}
-## [/codeblock][br][br]
-##
-## You can control what is considered "flat" by adjusting the
-## [param flat_max_depth] value, which defaults to [code]0.1[/code]. Optionally,
-## you can also include [i]any[/i] flat geometry by passing [code]true[/code]
-## to [param include_complex_meshes]. However, this will create an entry with
-## a [code]'mesh'[/code] key and a [MeshInstance2D] value instead of a texture.
-## [i](As of Godot 4.3, [MeshTexture]s are broken in most use cases.)[/i][br][br]
-##
-## [b][method BamParser.parse] must be called first.[/b][br][br]
-##
-## [b]NOTE:[/b] The [code]'position'[/code] and [code]'scale'[/code] values in
-## each entry are the values found in the original geometry. As an example, if
-## you were creating a UI with [Control] nodes, and you had a BAM file with UI
-## elements that were already pre-placed, you could use the entries returned
-## from this method to create several [TextureRect]s, [TextureButton]s, etc.,
-## and setting their position / scale should re-create the GUI seen in the BAM
-## file accurately. Just keep in mind that these textures are often very big by
-## default -- scaling with a parent [Control] node is recommended, if needed.
-func make_2d_entries(include_complex_meshes := false, flat_max_depth := 0.1) -> Dictionary:
-	assert(
-		objects[1].object_type.name == 'ModelRoot',
-		'The first object in %s is not ModelRoot. Ensure that this is a model file.' % source_file_name
-	)
-	
-	converting_to_resource = true
-	var model_root := objects[1] as PandaModelRoot
-	var model := model_root.convert()
-	
-	var check_children = func(check_children: Callable, node: Node) -> Dictionary:
-		var textures := {}
-		for child in node.get_children():
-			textures.merge(check_children.call(check_children, child))
-		
-		if (node is not MeshInstance3D or
-				node.get_aabb().get_shortest_axis_size() >= flat_max_depth):
-			return textures
-			
-		var mesh_instance := node as MeshInstance3D
-		var aabb := mesh_instance.get_aabb()
-		var aabb_center := aabb.get_center()
-		var mesh_rect: Vector2
-		var mesh_center: Vector2
-		match aabb.get_shortest_axis_index():
-			0:
-				mesh_rect = Vector2(aabb.size.y, aabb.size.z)
-				mesh_center = Vector2(aabb_center.y, -aabb_center.z)
-			1:
-				mesh_rect = Vector2(aabb.size.x, aabb.size.z)
-				mesh_center = Vector2(aabb_center.x, -aabb_center.z)
-			2:
-				mesh_rect = Vector2(aabb.size.x, aabb.size.y)
-				mesh_center = Vector2(aabb_center.x, -aabb_center.y)
-				
-		# Going from meters -> pixels will severly decrease the size
-		# of the outputted node, so we'll need an actual conversion.
-		# Let's do the default conversion for a Sprite3D:
-		#  1 pixel is 0.01 meters (and 1 meter is 100 pixels)
-		var m2px := 100
-		
-		var transform: Transform3D
-		var curr_node: Node = node
-		while curr_node != model:
-			transform *= curr_node.transform
-			curr_node = curr_node.get_parent()
-		var position := Vector2(transform.origin.x, -transform.origin.y) * m2px
-		
-		for i in range(mesh_instance.mesh.get_surface_count()):
-			var mesh_arrays := mesh_instance.mesh.surface_get_arrays(i)
-			var material := mesh_instance.mesh.surface_get_material(i)
-			if material.albedo_texture:
-				var uvs: Array = Array(mesh_arrays[Mesh.ARRAY_TEX_UV])
-				if uvs.size() == 4:
-					# This is just a simple square, and likely represents a
-					# texture card with a 1:1 UV map -- so let's just make
-					# an atlas texture.
-					var texture := AtlasTexture.new()
-					texture.atlas = material.albedo_texture
-					var texture_size: Vector2 = material.albedo_texture.get_size()
-					texture.region = Rect2(uvs.min() * texture_size, Vector2(0, 0))
-					texture.region.end = uvs.max() * texture_size
-					var scale := (mesh_rect / texture.region.size) * m2px
-					textures[mesh_instance.name] = {
-						'texture': texture,
-						'position': (
-							# Position on mesh
-							position
-							# Center origin (instead of top-left)
-							- ((texture.get_size() * scale) / 2)
-							# Offset "center" according to mesh center offset
-							+ (mesh_center * m2px)
-						),
-						'scale': scale
-					}
-					continue
-					
-			if include_complex_meshes:
-				# This mesh either does not have a texture or is more complex
-				# than just a square, but it is still flat -- since we were
-				# requested to, we'll make a MeshInstance2D node for it.
-				var mesh_2d := MeshInstance2D.new()
-				mesh_2d.mesh = mesh_instance.mesh
-				mesh_2d.name = mesh_instance.name
-				mesh_2d.texture = material.albedo_texture
-				textures[mesh_instance.name] = {
-					'mesh': mesh_2d,
-					'position': position - ((mesh_rect) / 2),  # center origin
-					'scale': Vector2(m2px, -m2px)
-				}
-				
-		return textures
-	
-	converting_to_resource = false
-	return check_children.call(check_children, model)
 
 ## Converts the contents of the BAM file to an [Animation] resource.
 ## [b][method BamParser.parse] must be called first.[/b]
@@ -664,19 +525,19 @@ func make_animation() -> Animation:
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is an animation file.' % source_file_name
 	)
-	
+
 	converting_to_resource = true
 	var model_root := objects[1] as PandaModelRoot
 	var result := model_root.convert_animation()
 	converting_to_resource = false
 	return result
-	
+
 func make_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	assert(
 		objects[1].object_type.name == 'ModelRoot',
 		'The first object in %s is not ModelRoot. Ensure that this is a font file.' % source_file_name
 	)
-	
+
 	converting_to_resource = true
 	var model_root := objects[1] as PandaModelRoot
 	var result := model_root.convert_font(small_caps, small_caps_scale)
@@ -702,7 +563,7 @@ func cleanup() -> void:
 func ensure(result: bool, message: String, error_value:=FAILED) -> void:
 	if not result:
 		parse_error(message, error_value)
-	
+
 func parse_error(message: String, error_value:=FAILED) -> void:
 	error = error_value
 	push_error(_get_assertion_prefix() + message)

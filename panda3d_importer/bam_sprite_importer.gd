@@ -39,10 +39,6 @@ func _get_import_options(path, preset_index):
 			'property_hint': PROPERTY_HINT_LINK,
 		},
 		{
-			'name': 'include_complex_meshes',
-			'default_value': true
-		},
-		{
 			'name': 'max_depth',
 			'default_value': 0.1,
 			'property_hint': PROPERTY_HINT_RANGE,
@@ -58,7 +54,7 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 		return ERR_SKIP
 	
 	var parser := BamParser.new()
-	parser.configuration['parser']['make_sprite_scale'] = options['scale']
+	parser.configuration['parser']['make_2d_scale'] = options['scale']
 	
 	var error := parser.load(source_file)
 	if error:
@@ -87,7 +83,7 @@ func _import(source_file, save_path, options, platform_variants, gen_files) -> E
 	assert(parser.objects.size() > 0)
 	
 	var scene = PackedScene.new()
-	var node_2d := parser.make_2d(options['include_complex_meshes'], options['max_depth'])
+	var node_2d := parser.make_2d(options['max_depth'])
 	if parser.error:
 		return parser.error
 	for child in node_2d.find_children('*', "", true, false):
