@@ -1,2 +1,0 @@
-extends PandaModelNode
-class_name PandaModelRoot

@@ -5,7 +5,7 @@ class_name Surface
 # We want to minimize the number of surfaces we're adding.
 # That means the presence or absence of a feature, such as textures or
 # vertex coloring, will each need an additional surface.
-# Let's start with a default surface that has  
+# Let's start with a default surface that has
 
 enum Feature {
 	DEFAULT = 0,
@@ -23,6 +23,7 @@ static var textures_to_id := {}
 var features: int
 
 static var surfaces: Dictionary
+static var surface_pass_map: Dictionary[int, int]
 static var colors: Dictionary
 
 var color: Color
@@ -30,12 +31,13 @@ var texture: Texture2D
 var texture_id := 0
 var uv_coords: PackedVector2Array
 var indices: PackedInt32Array
+var next_pass
 
 static func with_albedo_color(new_color: Color) -> Surface:
 	var surface := Surface.new()
 	surface.add_albedo_color(new_color)
 	return surface
-	
+
 func add_albedo_color(new_color: Color) -> void:
 	features |= Feature.ALBEDO_COLOR
 	color = new_color
@@ -44,7 +46,7 @@ static func with_vertex_coloring() -> Surface:
 	var surface := Surface.new()
 	surface.features = Feature.VERTEX_COLORS
 	return surface
-	
+
 static func from_surface_id(surface_id: int) -> Surface:
 	var surface := Surface.new()
 	surface.features = surface_id & 0xFF
@@ -53,8 +55,8 @@ static func from_surface_id(surface_id: int) -> Surface:
 	if surface.features & Feature.TEXTURE:
 		surface.texture_id = (surface_id >> 16) & 0xFF
 		surface.texture = textures_to_id.find_key(surface.texture_id)
-	return surface 
-	
+	return surface
+
 func _to_string() -> String:
 	var value := '<Surface id=%s' % get_surface_id()
 	if features & Feature.ALBEDO_COLOR:
@@ -68,12 +70,14 @@ func _to_string() -> String:
 	if features & Feature.BILLBOARD:
 		value += ' billboard'
 	return value + '>'
-	
+
 func add_vertex_coloring() -> void:
 	features |= Feature.VERTEX_COLORS
 
-func add_texture(new_texture: Texture2D) -> void:
+func add_texture(new_texture: PandaImageAndAlphaTexture) -> void:
 	features |= Feature.TEXTURE
+	if new_texture.has_alpha():
+		features |= Feature.ALPHA
 	texture = new_texture
 	Surface.static_mutex.lock()
 	if texture in textures_to_id:
@@ -83,28 +87,29 @@ func add_texture(new_texture: Texture2D) -> void:
 		texture_id = next_texture_id
 		next_texture_id += 1
 	Surface.static_mutex.unlock()
-	
+
 func add_alpha() -> void:
 	features |= Feature.ALPHA
-	
+
 func add_billboard() -> void:
 	features |= Feature.BILLBOARD
-	
+
 func get_surface_id() -> int:
 	return (texture_id << 16) | (get_color_id() << 8) | features
-		
+
 func get_color_id() -> int:
 	if color in colors:
 		return colors[color]
 	colors[color] = colors.size()
 	return colors[color]
-	
-func finalize() -> StandardMaterial3D:
+
+func finalize(next_pass: StandardMaterial3D = null) -> StandardMaterial3D:
 	var surface_id := get_surface_id()
 	if surface_id in surfaces:
 		return surfaces[surface_id]
-	
+
 	var material := StandardMaterial3D.new()
+	material.next_pass = next_pass
 	# Textures
 	if features & Feature.TEXTURE:
 		material.albedo_texture = texture
@@ -119,20 +124,20 @@ func finalize() -> StandardMaterial3D:
 	material.vertex_color_use_as_albedo = features & Feature.VERTEX_COLORS
 	if features & Feature.ALBEDO_COLOR:
 		material.albedo_color = color
-		
+
 	# Billboard
 	if features & Feature.BILLBOARD:
 		material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
 		material.billboard_keep_scale = true
-		
+
 	# By default, Panda3D does not apply lighting to objects unless
 	# explicitly told to do so. To preserve the look of a Panda3D model,
 	# we'll change the shading mode on all materials to unshaded.
 	material.shading_mode = material.SHADING_MODE_UNSHADED
-	
+
 	# By default, Panda3D vertex colors are stored in sRGB color space.
 	material.vertex_color_is_srgb = true
-	
+
 	#prints('FEA', features, 'TEX', material.albedo_texture, 'COL', material.albedo_color)
 	surfaces[surface_id] = material
 	return material
