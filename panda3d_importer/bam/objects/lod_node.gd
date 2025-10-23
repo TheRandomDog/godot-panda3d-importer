@@ -7,12 +7,12 @@ var switches: PackedVector2Array
 func parse_object_data():
 	super()
 	center = datagram.decode_vector3(datagram.decode_stdfloat)
-	
+
 	var switches_count := datagram.decode_u16()
 	switches.resize(switches_count)
 	for i in range(switches_count):
 		switches[i] = datagram.decode_vector2(datagram.decode_stdfloat)
-	
+
 	if not name:
 		name = 'HLOD'
 

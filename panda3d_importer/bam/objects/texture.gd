@@ -124,10 +124,11 @@ func parse_texture_header() -> void:
 		PandaImportDependencyManager.DependencyType.TEXTURE,
 	)
 	alpha_filename = datagram.decode_string()
-	bam_parser.import_dependency_manager.add_dependency(
-		self, alpha_filename,
-		PandaImportDependencyManager.DependencyType.ALPHA_TEXTURE,
-	)
+	if alpha_filename:
+		bam_parser.import_dependency_manager.add_dependency(
+			self, alpha_filename,
+			PandaImportDependencyManager.DependencyType.ALPHA_TEXTURE,
+		)
 
 	primary_file_num_channels = datagram.decode_u8()
 	alpha_file_channel = datagram.decode_u8()

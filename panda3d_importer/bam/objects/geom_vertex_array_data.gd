@@ -31,6 +31,8 @@ func parse_object_data() -> void:
 ## Since each [code]PandaGeomVertexArrayData[/code] object may only contain a
 ## subset of data, any empty entries in the dictionary will be removed.
 func _gather_mesh_data() -> Dictionary:
+	array_datagram.reset_cursor()
+
 	# Store a list of transformed mesh data.
 	var data := {
 		'vertices': PackedVector3Array(),
@@ -77,33 +79,36 @@ func _gather_mesh_data() -> Dictionary:
 
 		# Let's start reading each column for this stride.
 		for column in array_format.get_columns():
-			var alignment_goal: int = array_datagram._datagram_byte_offset + column.size
+			var alignment_goal: int = array_datagram.cursor + column.size
 
 			var column_name: String = column.name.name
+			var numeric_type_decoder := Callable(
+				array_datagram, column.numeric_type_decoder
+			)
 			match column.contents:
 				PandaGeom.Contents.POINT:
 					data.vertices.append(
-						datagram.decode_vector3(column.numeric_type_decoder)
+						array_datagram.decode_vector3(numeric_type_decoder)
 						* global_configuration.rotation_matrix
 					)
 				PandaGeom.Contents.TEXCOORD:
 					# Panda3D's UV wrapping on the vertical axis starts at the top
 					# and ends at the bottom, which is the opposite of Godot.
 					# We'll flip the V coordinate here.
-					var texcoords = datagram.decode_vector2(column.numeric_type_decoder)
+					var texcoords = array_datagram.decode_vector2(numeric_type_decoder)
 					texcoords.y = 1 - texcoords.y
 					if column_name not in data.texcoords:
 						data.texcoords[column_name] = PackedVector2Array()
 					data.texcoords[column_name].append(texcoords)
 				PandaGeom.Contents.INDEX:
-					var index = column.numeric_type_decoder.call()
+					var index = numeric_type_decoder.call()
 					if column_name == 'transform_blend':
 						data.transform_blend_indexes.append(index)
 					else:
 						data.indexes.append(index)
 				PandaGeom.Contents.NORMAL:
 					data.normals.append(
-						datagram.decode_vector3(column.numeric_type_decoder)
+						array_datagram.decode_vector3(numeric_type_decoder)
 					)
 				PandaGeom.Contents.VECTOR:
 					# As of Panda3D 1.10, normal mapping is done via three
@@ -117,8 +122,8 @@ func _gather_mesh_data() -> Dictionary:
 
 					# We have to move the datagram cursor anyway, so just read
 					# it, even if we don't do anything with it.
-					var vector_data = datagram.decode_vector3(
-						column.numeric_type_decoder
+					var vector_data = array_datagram.decode_vector3(
+						numeric_type_decoder
 					)
 					match column_name:
 						'tangent':
@@ -128,13 +133,13 @@ func _gather_mesh_data() -> Dictionary:
 						'normal':
 							data.normals.append(vector_data)
 				PandaGeom.Contents.COLOR:
-					data.colors.append(column.numeric_type_decoder.call())
+					data.colors.append(numeric_type_decoder.call())
 				_:
 					push_warning('%s Skipping %s bytes of unknown column content...' % [self, alignment_goal])
 					array_datagram.take_size(alignment_goal)
 
-			if array_datagram._datagram_byte_offset < alignment_goal:
-				array_datagram.take_size(alignment_goal - array_datagram._datagram_byte_offset)
+			if array_datagram.cursor < alignment_goal:
+				array_datagram.take_size(alignment_goal - array_datagram.cursor)
 
 		array_datagram.take_size(stride_skip)
 

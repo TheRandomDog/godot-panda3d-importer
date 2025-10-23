@@ -17,36 +17,24 @@ func get_columns() -> Array[Dictionary]:
 		columns[-1].name = get_object(columns[-1].name)
 	return columns
 
-## Decodes a DirectX style color value from a uint32 (AGBR)
-func _decode_dcba() -> Color:
-	# These values work but they don't seem to match the documentation
-	var vector: Vector4 = datagram.decode_vector4(datagram.decode_u8)
-	return Color(vector.x / 255, vector.y / 255, vector.z / 255, vector.w / 255)
-
-## Decodes a DirectX style color value from a uint32 (ARGB)
-func _decode_dabc() -> Color:
-	# These values work but they don't seem to match the documentation
-	var vector: Vector4 = datagram.decode_vector4(datagram.decode_u8)
-	return Color(vector.z / 255, vector.y / 255, vector.x / 255, vector.w / 255)
-
-## Returns the required [Callable] from [BamParser] to decode a given
+## Returns the required [PandaDatagramReader] method name to decode a given
 ## [enum PandaGeom.NumericType].
-func get_decoder_for_numeric_type(numeric_type: PandaGeom.NumericType) -> Callable:
+func get_decoder_for_numeric_type(numeric_type: PandaGeom.NumericType) -> StringName:
 	match numeric_type:
-		PandaGeom.NumericType.U8: return datagram.decode_u8
-		PandaGeom.NumericType.U16: return datagram.decode_u16
-		PandaGeom.NumericType.U32: return datagram.decode_u32
-		PandaGeom.NumericType.S8: return datagram.decode_s8
-		PandaGeom.NumericType.S16: return datagram.decode_s16
-		PandaGeom.NumericType.S32: return datagram.decode_s32
-		PandaGeom.NumericType.FLOAT: return datagram.decode_float
-		PandaGeom.NumericType.DOUBLE: return datagram.decode_double
-		PandaGeom.NumericType.STDFLOAT: return datagram.decode_stdfloat
-		PandaGeom.NumericType.PACKED_DCBA: return _decode_dcba
-		PandaGeom.NumericType.PACKED_DABC: return _decode_dabc
+		PandaGeom.NumericType.U8: return &"decode_u8"
+		PandaGeom.NumericType.U16: return &"decode_u16"
+		PandaGeom.NumericType.U32: return &"decode_u32"
+		PandaGeom.NumericType.S8: return &"decode_s8"
+		PandaGeom.NumericType.S16: return &"decode_s16"
+		PandaGeom.NumericType.S32: return &"decode_s32"
+		PandaGeom.NumericType.FLOAT: return &"decode_float"
+		PandaGeom.NumericType.DOUBLE: return &"decode_double"
+		PandaGeom.NumericType.STDFLOAT: return &"decode_stdfloat"
+		PandaGeom.NumericType.PACKED_DCBA: return &"decode_color_dcba"
+		PandaGeom.NumericType.PACKED_DABC: return &"decode_color_dabc"
 		_:
 			bam_parser.parse_error('Unknown NumericType')
-			return func(): pass
+			return StringName()
 
 ## Returns the number of bytes needed to read a
 ## given [enum PandaGeom.NumericType].

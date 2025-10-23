@@ -175,7 +175,7 @@ func resolve_object(object: BamObject) -> Variant:
 		# Because of this, it will add itself to our objects array.
 		remove_unresolved_object(object.object_id)
 		resolving_object = object
-		return object.resolve()   # May be null
+		return object.resolve()   # May return null
 
 func resolve_objects_at_current_depth() -> void:
 	# Now that we have everything we need, we'll resolve our current objects.

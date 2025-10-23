@@ -36,7 +36,7 @@ func convert() -> MeshInstance3D:
 		var mesh_array_flags = geom.get_mesh_array_flags()
 
 		# Apply render attributes and effects to the mesh surface.
-		for attrib in geom_info.render_stateattribs:
+		for attrib in geom_info.render_state.get_attribs():
 			attrib.apply_to_surface(surface)
 		for effect in effects.get_effects():
 			effect.apply_to_surface(surface)

@@ -73,7 +73,7 @@ func _init(
 
 	_datagram_size_with_length = datagram_size + size_value_length
 	cursor_start = byte_offset + size_value_length
-	cursor = cursor_start
+	reset_cursor()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
@@ -82,6 +82,9 @@ func _notification(what: int) -> void:
 			push_warning(
 				'Datagram being freed with %s unread bytes!' % remaining
 			)
+
+func reset_cursor() -> void:
+	cursor = cursor_start
 
 ## Returns [code]true[/code] if there is enough buffer in the datagram to read
 ## [param length] bytes.
@@ -209,6 +212,18 @@ func decode_color() -> Color:
 		decode_stdfloat(),
 		decode_stdfloat(),
 	)
+
+## Decodes a DirectX style color value from a uint32 (AGBR)
+func decode_color_dcba() -> Color:
+	# These values work but they don't seem to match the documentation
+	var vector: Vector4 = decode_vector4(decode_u8)
+	return Color(vector.x / 255, vector.y / 255, vector.z / 255, vector.w / 255)
+
+## Decodes a DirectX style color value from a uint32 (ARGB)
+func decode_color_dabc() -> Color:
+	# These values work but they don't seem to match the documentation
+	var vector: Vector4 = decode_vector4(decode_u8)
+	return Color(vector.z / 255, vector.y / 255, vector.x / 255, vector.w / 255)
 
 ## Decodes and returns a [String] from the datagram buffer.
 func decode_string() -> String:

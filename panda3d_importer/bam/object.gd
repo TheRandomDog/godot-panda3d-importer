@@ -141,6 +141,6 @@ func get_object(weakref: WeakRef) -> BamObject:
 	return weakref.get_ref() if weakref else null
 
 func get_objects_from_array(weakref_array: Array[WeakRef]) -> Array:
-	return weakref_array.filter(
+	return weakref_array.map(
 		func(weakref: WeakRef) -> BamObject: return weakref.get_ref()
 	)

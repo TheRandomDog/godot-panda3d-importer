@@ -9,7 +9,7 @@ enum DependencyType {
 
 var _source_file_path: String:
 	set(new):
-		_source_file_path = _source_file_path.trim_prefix('res://')
+		_source_file_path = new.trim_prefix('res://')
 
 var relative_path: String:
 	get:
@@ -18,7 +18,7 @@ var relative_path: String:
 		else:
 			return _source_file_path
 	set(new):
-		relative_path = relative_path.trim_prefix('res://')
+		relative_path = new.trim_prefix('res://')
 
 var dependencies: Array[Dictionary]
 

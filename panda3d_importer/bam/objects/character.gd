@@ -71,9 +71,9 @@ func generate_skeleton() -> Skeleton3D:
 		var found := false
 		for child in children:
 			if child.node is PandaGeomNode:
-				for geom_info in child.nodegeoms:
-					if geom_info.geomdatatransform_blend_table:
-						for blend in geom_info.geomdatatransform_blend_tableblends:
+				for geom_info: PandaGeomNode.GeomInfo in child.node.geoms:
+					if geom_info.geom.data.transform_blend_table:
+						for blend in geom_info.geom.data.transform_blend_table.blends:
 							for entry in blend.entries:
 								if entry.transform.object_id == vertex_transform.object_id:
 									found = true
@@ -104,7 +104,7 @@ func _check_group_for_joints(skeleton: Skeleton3D, group: PandaPartGroup, parent
 		bam_parser.ensure(
 			part is PandaCharacterJoint,
 			'In a nested part child of a CharacterJointBundle, instead of ' +
-				'PandaCharacterJont, part was: %s' % part
+				'PandaCharacterJoint, part was: %s' % part
 		)
 
 		# Create a new bone for this CharacterJoint.

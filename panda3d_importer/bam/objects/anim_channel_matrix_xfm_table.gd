@@ -100,7 +100,7 @@ func get_animation_data() -> Dictionary:
 	for frame in range(frame_count):
 		if has_position_data:
 			data['position'].append(
-				_get_table_slice(frame, 9) * bam_parser.rotation_matrix
+				_get_table_slice(frame, 9) * global_configuration.rotation_matrix
 			)
 		if has_rotation_data:
 			var basis = Panda3DImporterPlugin.get_basis_from_hpr(_get_table_slice(frame, 6))
