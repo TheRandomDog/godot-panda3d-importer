@@ -183,6 +183,13 @@ func decode_vector3(decode_function: Callable) -> Vector3:
 		decode_function.call(),
 	)
 
+## Calls [param decode_function] three times to read three successive values
+## from the datagram buffer to create a [Vector3] representing a 3D position
+## translated to Godot's coordinate system.
+func decode_position(decode_function: Callable) -> Vector3:
+	var vector := decode_vector3(decode_function)
+	return Vector3(vector.x, vector.z, -vector.y)
+
 ## Calls [param decode_function] four times to read four successive values
 ## from the datagram buffer, and returns the values in a [Vector4].
 func decode_vector4(decode_function: Callable) -> Vector4:
@@ -193,6 +200,22 @@ func decode_vector4(decode_function: Callable) -> Vector4:
 		decode_function.call(),
 	)
 
+## Calls [param decode_function] three times to read three successive values
+## from the datagram buffer to create a [Vector3] representing a euler rotation
+## translated to Godot's coordinate system.
+func decode_rotation(decode_function: Callable = decode_stdfloat) -> Quaternion:
+	var vector := decode_vector3(decode_function)
+	return Quaternion.from_euler(Vector3(
+		deg_to_rad(vector.y), deg_to_rad(vector.x), -deg_to_rad(vector.z)
+	))
+
+## Decodes 4 successive [code]stdfloat[/code] values from the datagram buffer to
+## create a [Quaternion] translated to Godot's coordinate system.
+func decode_quaternion() -> Quaternion:
+	var w := decode_stdfloat()
+	var vector := decode_vector3(decode_stdfloat)
+	return Quaternion(vector.x, vector.z, -vector.y, w)
+
 ## Decodes 16 successive [code]stdfloat[/code] values from the datagram buffer,
 ## and returns the values as a [Projection] (matrix).
 func decode_projection() -> Projection:
@@ -202,6 +225,10 @@ func decode_projection() -> Projection:
 		decode_vector4(decode_stdfloat),
 		decode_vector4(decode_stdfloat),
 	)
+
+func decode_transform() -> Transform3D:
+	var transform := Transform3D(decode_projection())  # TODO
+	return transform
 
 ## Decodes four successive [code]stdfloat[/code] values from the datagram buffer,
 ## and returns the values as a [Color].

@@ -13,12 +13,7 @@ const IS_2D_TRANSFORM_FLAG = 0x00010000
 
 var supports_2d_transform_flag := false
 var flags: int
-var pos: Vector3
-var quat: Quaternion
-var hpr: Vector3
-var scale: Vector3
-var shear: Vector3
-var matrix: Projection
+var transform: Transform3D
 
 func is_2d_transform() -> bool:
 	return flags & IS_2D_TRANSFORM_FLAG
@@ -36,38 +31,20 @@ func parse_object_data() -> void:
 	flags = datagram.decode_u32()
 	if bam_parser.version >= [5, 2]:
 		supports_2d_transform_flag = true
+	transform = Transform3D()
 	if is_componentwise():
-		pos = datagram.decode_vector3(datagram.decode_stdfloat)
-		var rotation := datagram.decode_vector3(datagram.decode_stdfloat)
+		transform.origin = datagram.decode_position(datagram.decode_stdfloat)
+		var basis: Basis
 		if is_quat():
-			quat = Quaternion(rotation.normalized(), datagram.decode_stdfloat())
+			basis = Basis(datagram.decode_quaternion())
 		else:
-			hpr = rotation
-		scale = datagram.decode_vector3(datagram.decode_stdfloat)
-		shear = datagram.decode_vector3(datagram.decode_stdfloat)
+			basis = Basis(datagram.decode_rotation())
+		basis = basis.scaled(datagram.decode_vector3(datagram.decode_stdfloat))
+		var shear = datagram.decode_vector3(datagram.decode_stdfloat)  # TODO
+		transform.basis = basis
 	elif is_matrix():
-		matrix = datagram.decode_projection()
+		transform = datagram.decode_transform()
 
 ## Applies the transform to a given [param node].
 func apply_to_node(node: Node3D, panda_node: PandaNode) -> void:
-	var transform: Transform3D
-	if flags == CommonFlags.IDENTITY:
-		transform = Transform3D.IDENTITY
-	elif is_componentwise():
-		transform = Transform3D()
-		transform.origin = pos
-		var basis: Basis
-		if is_quat():
-			basis = Basis(quat)
-		else:
-			basis = Panda3DImporterPlugin.get_basis_from_hpr(hpr)
-		transform.basis = basis.scaled(scale)
-		# TODO: Handle shear value
-	elif is_matrix():
-		# Undo the rotation we apply to all vertices, because the rotation needs
-		# to happen around the origin of this transform.
-		transform = global_configuration.rotation_matrix
-		transform *= Transform3D(matrix).rotated_local(Vector3.LEFT, -PI / 2)
-	else:
-		bam_parser.parse_warning("Unknown TransformState flags")
 	node.transform = transform
