@@ -1,8 +1,8 @@
 extends BamObject
-class_name PandaMaterial
+class_name PandaNativeMaterial
 
 # TODO: Bam 6.39 introduced a new Material structure. This is the old structure from before 6.39
-enum Flags { 
+enum Flags {
 	AMBIENT = 1,
 	DIFFUSE = 2,
 	SPECULAR = 4,

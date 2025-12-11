@@ -14,6 +14,11 @@ static func get_default() -> Dictionary:
 				Vector3()
 			),
 			'pixel_size': 0.01,
+			'import_flags': (
+				EditorSceneFormatImporter.IMPORT_ANIMATION
+				| EditorSceneFormatImporter.IMPORT_GENERATE_TANGENT_ARRAYS
+				| EditorSceneFormatImporter.IMPORT_USE_NAMED_SKIN_BINDS
+			)
 		},
 		PandaAnimBundleNode: {
 			'loop_mode': Animation.LoopMode.LOOP_NONE,

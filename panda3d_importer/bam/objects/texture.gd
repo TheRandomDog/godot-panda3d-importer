@@ -220,9 +220,9 @@ func load_texture() -> PandaImageAndAlphaTexture:
 		PandaImportDependencyManager.DependencyType.ALPHA_TEXTURE,
 	)
 	if alpha_resource is Texture2D:
-		texture.alpha = alpha_resource.get_image()
+		texture.alpha_image = alpha_resource.get_image()
 	elif alpha_resource is Image:
-		texture.alpha = alpha_resource
+		texture.alpha_image = alpha_resource
 
 	texture.alpha_channel = alpha_file_channel
 	return texture

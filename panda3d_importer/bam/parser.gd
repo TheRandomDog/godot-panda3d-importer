@@ -28,7 +28,7 @@ func resolve_type(type_index: int) -> BamObjectType:
 var object_ids_seen: Array[int]
 # Each index on the array represents stream depth.
 var unresolved_objects: Array[Dictionary]
-var objects: Dictionary
+var objects: Dictionary[int, BamObject]
 var resolving_object: BamObject
 var converting_to_resource := false
 
@@ -58,6 +58,12 @@ func get_object(object_id: int, allow_null := false) -> BamObject:
 		return resolve_object(
 			unresolved_objects[current_object_stream_depth][object_id]
 		)
+
+func get_objects_of_type(object_type: Script) -> Array[BamObject]:
+	if not BamObject.extended_by_script(object_type):
+		push_error('Expected "object_type" to be a Script extending BamObject, received %s instead' % object_type.resource_path)
+
+	return objects.values().filter(func(o: BamObject) -> bool: return is_instance_of(o, object_type))
 
 func get_dependency(
 	path: String,

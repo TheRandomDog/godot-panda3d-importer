@@ -70,7 +70,7 @@ func parse(byte_array: PackedByteArray, compressed := false) -> Error:
 	var file_contents := byte_array.get_string_from_utf8()
 	if not file_contents:
 		return FAILED
-	
+
 	file_contents = comment_remover.sub(file_contents, '', true)
 	matches = regex.search_all(file_contents)
 	var entry = next_entry()
@@ -91,10 +91,10 @@ func parse(byte_array: PackedByteArray, compressed := false) -> Error:
 				egg_contents.append(finished_element)
 			entry = next_entry()
 			continue
-		
+
 		#var name: String = entry['name']
 		#var contents = entry['contents']
-		
+
 		var entry_dict = {
 			'type': entry['type'],
 			'name': entry['name'],
@@ -103,9 +103,9 @@ func parse(byte_array: PackedByteArray, compressed := false) -> Error:
 		}
 		entry_stacks.append(entry_dict)
 		entry = next_entry()
-	
+
 	resolve()
-	
+
 	return OK
 
 func resolve():
@@ -147,24 +147,24 @@ func set_coordinate_system(entry: Dictionary):
 		var other:
 			push_warning('Unhandled coordinate system value: "%s"' % other)
 	rotation_matrix = Transform3D(basis, Vector3())
-			
+
 	for pool in vertex_pools.values():
 		for vertex in pool.verticies.values():
 			vertex.coordinate_system = coordinate_system
-	
+
 func make_model() -> Node3D:
 	var node := Node3D.new()
 	node.name = source_file_name.get_file()
-	
+
 	converting_to_resource = true
 	for group in root_groups:
 		var child_node = group.convert()
 		if child_node:
 			node.add_child(child_node)
 	converting_to_resource = false
-	
+
 	return node
-	
+
 func make_animation() -> Animation:
 	var animation
 	converting_to_resource = true
@@ -178,7 +178,7 @@ func make_animation() -> Animation:
 ##
 ## If [param small_caps] is [code]true[/code], lowercase alphabet glyphs
 ## are automatically generated from uppercase alphabet glyphs but scaled down by
-## [param small_caps_scale], which may be useful if a font does not contain 
+## [param small_caps_scale], which may be useful if a font does not contain
 ## lowercase letters.
 func make_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	converting_to_resource = true
@@ -188,7 +188,7 @@ func make_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	var font := root_groups[0].convert_font(small_caps, small_caps_scale)
 	converting_to_resource = false
 	return font
-	
+
 func next_entry() -> Dictionary:
 	var entry_response = {
 		"type": null,
@@ -198,10 +198,10 @@ func next_entry() -> Dictionary:
 	if self.index >= self.matches.size():
 		entry_response['type'] = EGG_END
 		return entry_response
-		
+
 	var entry = self.matches[self.index]
 	self.index += 1
-	
+
 	var type_string = entry.get_string(1)
 	if not type_string:
 		if entry.get_string() == '}':
@@ -223,7 +223,7 @@ func next_entry() -> Dictionary:
 func ensure(result: bool, message: String, error_value:=FAILED) -> void:
 	if not result:
 		parse_error(message, error_value)
-	
+
 func parse_error(message: String, error_value:=FAILED) -> void:
 	error = error_value
 	push_error(_get_assertion_prefix() + message)

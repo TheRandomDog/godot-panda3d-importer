@@ -1,11 +1,96 @@
 extends PandaModelNode
 class_name PandaModelRoot
 
+#func convert() -> Node3D:
+#	var result := super()
+#
+#	var animations := make_animations()
+#
+#	var model_bundles := get_bundles()
+#	for bundle_name in model_bundles.animations:
+#		#var part_bundles := model_bundles.get_parts_named(bundle_name)
+#		#if not part_bundles:
+#
+#		var parts_node := result.find_child(bundle_name)
+#		var animation_player: AnimationPlayer
+#		if not parts_node:
+#			parts_node = Node.new()
+#			parts_node.name = bundle_name
+#			result.add_child(parts_node)
+#			parts_node.owner = result
+#
+#			animation_player = AnimationPlayer.new()
+#			parts_node.add_child(animation_player)
+#			animation_player.owner = parts_node
+#		else:
+#			animation_player = parts_node.get_node(^'AnimationPlayer')
+#
+#		if not animation_player.has_animation_library(&''):
+#			animation_player.add_animation_library(&'', AnimationLibrary.new())
+#		var animation_library := animation_player.get_animation_library(&'')
+#
+#		var bundles := model_bundles.get_animations_named(bundle_name)
+#		animation_library.add_animation(bundle_name, bundles[0].convert_animation())
+#		for bundle_index in range(1, bundles.size()):
+#			animation_library.add_animation(
+#				'%s.%d' % [bundle_name, bundle_index],
+#				bundles[bundle_index].convert_animation(),
+#			)
+#
+#	return result
+
 ## Converts the contents of the BAM file to a [Node3D].
-func make_scene_tree() -> Node3D:
+func make_scene_tree(animation_libraries: Array[AnimationLibrary] = []) -> Node3D:
 	bam_parser.converting_to_resource = true
 	var result := self.convert()
-	result.set_meta(&'animations', get_animations())
+
+	animation_libraries.append(make_animation_library())
+	#var animation_libraries := external_animations + [make_animation_library()]
+	bam_parser.converting_to_resource = true
+
+	for animation_library in animation_libraries:
+		var animation_list := animation_library.get_animation_list()
+		var override_animation_name := animation_library.resource_name
+
+		var current_bundle_name: String
+		var current_bundle_start_index: int
+		var current_animation_library: AnimationLibrary
+
+		for library_index in animation_list.size():
+			var animation_name := animation_list[library_index]
+			var animation := animation_library.get_animation(animation_name)
+			if not current_bundle_name or not animation_name.begins_with(current_bundle_name):
+				current_bundle_name = animation_name
+				current_bundle_start_index = library_index
+
+				var animation_player: AnimationPlayer
+
+				var parts_node := result.find_child(current_bundle_name)
+				if not parts_node:
+					parts_node = Node.new()
+					parts_node.name = animation_name
+					result.add_child(parts_node)
+					parts_node.owner = result
+
+					animation_player = AnimationPlayer.new()
+					parts_node.add_child(animation_player)
+					animation_player.owner = parts_node
+				else:
+					animation_player = parts_node.get_node(^'AnimationPlayer')
+
+				if animation_player.has_animation_library(&''):
+					current_animation_library = animation_player.get_animation_library(&'')
+				else:
+					current_animation_library = AnimationLibrary.new()
+					animation_player.add_animation_library(&'', current_animation_library)
+
+			if override_animation_name:
+				animation_name = override_animation_name
+				var animation_index := library_index - current_bundle_start_index
+				if animation_index > 0:
+					animation_name += '.%d' % animation_index
+			current_animation_library.add_animation(animation_name, animation)
+
 	bam_parser.converting_to_resource = false
 	return result
 
@@ -98,14 +183,46 @@ func make_scene_tree_from_flat_meshes(flat_max_depth := 0.1) -> Node2D:
 	return node_2d
 
 
-func get_animations() -> Array[Animation]:
-	var animations: Array[Animation]
+func make_animation_library() -> AnimationLibrary:
 	bam_parser.converting_to_resource = true
-	for child_info in children:
-		if child_info.node is PandaAnimBundleNode:
-			animations.append(child_info.node.convert_animation())
+	var library := AnimationLibrary.new()
+
+	var model_bundles := get_bundles()
+	for bundle_name in model_bundles.animations:
+		var bundles := model_bundles.get_animations_named(bundle_name)
+
+		library.add_animation(bundle_name, bundles[0].convert_animation())
+		for bundle_index in range(1, bundles.size()):
+			library.add_animation(
+				'%s.%d' % [bundle_name, bundle_index],
+				bundles[bundle_index].convert_animation(),
+			)
+		#libraries.append(library)
+		#libraries[bundle_name] = library
+
 	bam_parser.converting_to_resource = false
-	return animations
+	return library
+
+#func make_animation_libraries() -> Array[AnimationLibrary]:
+#	bam_parser.converting_to_resource = true
+#	var libraries: Array[AnimationLibrary]
+#
+#	var model_bundles := get_bundles()
+#	for bundle_name in model_bundles.animations:
+#		var bundles := model_bundles.get_animations_named(bundle_name)
+#		var library := AnimationLibrary.new()
+#
+#		library.add_animation(bundle_name, bundles[0].convert_animation())
+#		for bundle_index in range(1, bundles.size()):
+#			library.add_animation(
+#				'%s.%d' % [bundle_name, bundle_index],
+#				bundles[bundle_index].convert_animation(),
+#			)
+#		libraries.append(library)
+#		#libraries[bundle_name] = library
+#
+#	bam_parser.converting_to_resource = false
+#	return libraries
 
 
 ## Converts this [PandaNode] into a [FontFile] resoucre.
@@ -271,3 +388,40 @@ func make_font(small_caps := false, small_caps_scale := 0.8) -> FontFile:
 	font.remove_size_cache(0, Vector2(16, 0))
 	bam_parser.converting_to_resource = false
 	return font
+
+#region Parts & Animations
+func get_bundles() -> Bundles:
+	var bundles := Bundles.new()
+	for part_bundle in bam_parser.get_objects_of_type(PandaPartBundleNode):
+		bundles.add_part(part_bundle)
+	for anim_bundle in bam_parser.get_objects_of_type(PandaAnimBundleNode):
+		bundles.add_animation(anim_bundle)
+	return bundles
+
+
+class Bundles:
+	var parts: Dictionary[String, Dictionary]
+	var animations: Dictionary[String, Array]
+
+	func add_part(part_bundle_node: PandaPartBundleNode) -> void:
+		for bundle in part_bundle_node.get_bundles():
+			if bundle.name not in parts:
+				parts[bundle.name] = {}
+			parts[bundle.name][bundle] = part_bundle_node
+
+	func add_animation(anim_bundle_node: PandaAnimBundleNode) -> void:
+		var bundle := anim_bundle_node.bundle
+		if bundle.name not in animations:
+			animations[bundle.name] = []
+		animations[bundle.name].append(anim_bundle_node)
+
+	func get_parts_named(name: String) -> Dictionary[PandaPartBundle, PandaPartBundleNode]:
+		var result: Dictionary[PandaPartBundle, PandaPartBundleNode]
+		result.assign(parts.get(name, {}))
+		return result
+
+	func get_animations_named(name: String) -> Array[PandaAnimBundleNode]:
+		var result: Array[PandaAnimBundleNode]
+		result.assign(animations.get(name, []))
+		return result
+#endregion

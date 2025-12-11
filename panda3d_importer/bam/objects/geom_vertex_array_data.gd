@@ -30,23 +30,188 @@ func parse_object_data() -> void:
 ##
 ## Since each [code]PandaGeomVertexArrayData[/code] object may only contain a
 ## subset of data, any empty entries in the dictionary will be removed.
+#func _gather_mesh_data() -> Dictionary:
+#	array_datagram.reset_cursor()
+#
+#	# Store a list of transformed mesh data.
+#	var data := {
+#		'vertices': PackedVector3Array(),
+#		'indexes': [],
+#		'texcoords': {},
+#		'normals': PackedVector3Array(),
+#		'colors': PackedColorArray(),
+#		'transform_blend_indexes': [],
+#		# Panda3D stores tangents and binormals separately, whereas Godot
+#		# stores them together. Thus we'll keep track of them separately here,
+#		# but recalculate them at the end if we receive any values.
+#		'ptangents': PackedVector3Array(),
+#		'binormals': PackedVector3Array(),
+#	}
+#
+#	# We will now begin to read the byte array containing our mesh data.
+#	#
+#	# The array_format (PandaGeomVertexArrayFormat) tells us how to read the
+#	# incoming byte array. In essence, the data contains multiple "columns" that
+#	# are interlaced. So, if you have three columns (A, B, C), you'd take turns
+#	# reading data from each of them: A -> B -> C -> A -> B -> C.
+#	# Each column describes at what byte it starts at and the length to expect.
+#	#
+#	# This continues until the byte array is out of data. Each loop should have
+#	# a set length known as a "stride", which is the number of bytes reserved
+#	# for that loop. The actual length of the data may be less.
+#
+#	# TODO: We could likely optimize this further if we moved away from columns
+#	# being dictionaries and sliced out data array strides directly to read from.
+#
+#	var stride_skip := array_format.stride - array_format.total_bytes
+#
+#	while array_datagram.datagram_size_remaining > 0:
+#		bam_parser.ensure(
+#			array_format.stride <= array_datagram.datagram_size_remaining,
+#			("GeomVertexArrayFormat's (%s) stride is bigger than our " +
+#				"remaining datagram size (%s > %s)") %
+#				[
+#					array_format.object_id,
+#					array_format.stride,
+#					array_datagram.datagram_size_remaining
+#				]
+#		)
+#
+#		# Let's start reading each column for this stride.
+#		for column in array_format.get_columns():
+#			var alignment_goal: int = array_datagram.cursor + column.size
+#
+#			var column_name: String = column.name.name
+#			var numeric_type_decoder := Callable(
+#				array_datagram, column.numeric_type_decoder
+#			)
+#			match column.contents:
+#				PandaGeom.Contents.POINT:
+#					data.vertices.append(
+#						array_datagram.decode_vector3(numeric_type_decoder)
+#						* global_configuration.rotation_matrix
+#					)
+#				PandaGeom.Contents.VECTOR:
+#					# As of Panda3D 1.10, normal mapping is done via three
+#					# separate vertex columns (normal, tangent, and binormal).
+#					#
+#					# We'll wait to get all this information to encode our
+#					# glTF 2.0 compatible normal mapping, which just requires
+#					# a binormal direction alongside a tangent.
+#					#
+#					# Also see: https://github.com/panda3d/panda3d/issues/546
+#
+#					# We have to move the datagram cursor anyway, so just read
+#					# it, even if we don't do anything with it.
+#					var vector_data = array_datagram.decode_vector3(
+#						numeric_type_decoder
+#					)
+#					match column_name:
+#						'tangent':
+#							data.ptangents.append(vector_data)
+#						'binormal':
+#							data.binormals.append(vector_data)
+#						'normal':
+#							data.normals.append(vector_data)
+#				PandaGeom.Contents.TEXCOORD:
+#					# Panda3D's UV wrapping on the vertical axis starts at the top
+#					# and ends at the bottom, which is the opposite of Godot.
+#					# We'll flip the V coordinate here.
+#					var texcoords = array_datagram.decode_vector2(numeric_type_decoder)
+#					texcoords.y = 1 - texcoords.y
+#					if column_name not in data.texcoords:
+#						data.texcoords[column_name] = PackedVector2Array()
+#					data.texcoords[column_name].append(texcoords)
+#				PandaGeom.Contents.COLOR:
+#					data.colors.append(numeric_type_decoder.call())
+#				PandaGeom.Contents.INDEX:
+#					var index = numeric_type_decoder.call()
+#					if column_name == 'transform_blend':
+#						data.transform_blend_indexes.append(index)
+#					else:
+#						data.indexes.append(index)
+#				PandaGeom.Contents.MORPH_DELTA:
+#					var x
+#				PandaGeom.Contents.NORMAL:
+#					data.normals.append(
+#						array_datagram.decode_vector3(numeric_type_decoder)
+#					)
+#				var content_type:
+#					if content_type != PandaGeom.Contents.OTHER:
+#						push_warning('%s: Skipping %s bytes of unknown column content (type: %d)...' % [
+#							self, column.size, content_type
+#						])
+#					array_datagram.take_size(column.size)
+#
+#			if array_datagram.cursor < alignment_goal:
+#				array_datagram.take_size(alignment_goal - array_datagram.cursor)
+#
+#		array_datagram.take_size(stride_skip)
+#
+#	# We're doing reading the byte array! Let's finish up our data dictionary.
+#
+#	# First, if we didn't get any tangent data, erase those two.
+#	# TODO: Since we erase everything at the bottom anyway, this is redundant.
+#	if not data.ptangents or not data.binormals:
+#		data.erase('ptangents')
+#		data.erase('binormals')
+#	else:
+#		# We must calculate the directional signs of the binormals.
+#		var tangents = PackedFloat32Array()
+#		bam_parser.ensure(
+#			data.ptangents.size() == data.binormals.size(),
+#			"The size of the tangents and binormal arrays do not match (%s != %s)" %
+#				[data.ptangents.size(), data.binormals.size()]
+#		)
+#		bam_parser.ensure(
+#			data.ptangents.size() == data.normals.size(),
+#			"The size of the tangents and normal arrays do not match (%s != %s)" %
+#				[data.ptangents.size(), data.normals.size()]
+#		)
+#		for i in range(data.ptangents.size()):
+#			var normal: Vector3 = data.normals[i]
+#			var tangent: Vector3 = data.ptangents[i]
+#			var binormal: Vector3 = data.binormals[i]
+#			var calc_binormal = tangent.cross(normal)
+#			var dot_product = calc_binormal.dot(binormal)
+#			tangents.append_array(PackedFloat32Array([
+#				tangent.x, tangent.y, tangent.z, 1.0 if dot_product > 0 else -1.0
+#			]))
+#		data.tangents = tangents
+#
+#	# Erase any empty entries.
+#	for key in data.keys():
+#		if not data[key]:
+#			data.erase(key)
+#
+#	return data
+
+static func new_mesh_array() -> Array:
+	var array: Array
+	array.resize(Mesh.ARRAY_MAX)
+	return array
+
+static func _default_mesh_data() -> Dictionary:
+	return {
+		Mesh.ARRAY_VERTEX: PackedVector3Array(),
+		Mesh.ARRAY_NORMAL: PackedVector3Array(),
+		Mesh.ARRAY_TANGENT: PackedFloat32Array(),
+		Mesh.ARRAY_COLOR: PackedColorArray(),
+		Mesh.ARRAY_TEX_UV: PackedVector2Array(),
+		Mesh.ARRAY_BONES: PackedInt32Array(),
+		Mesh.ARRAY_WEIGHTS: PackedFloat64Array(),
+		Mesh.ARRAY_INDEX: PackedInt32Array(),
+
+		PandaGeom.BLEND_SHAPES: Dictionary({}, TYPE_STRING, &'', null, TYPE_ARRAY, &'', null),
+		PandaGeom.TRANSFORM_BLEND_INDEXES: PackedInt32Array(),
+	}
+
 func _gather_mesh_data() -> Dictionary:
 	array_datagram.reset_cursor()
-
-	# Store a list of transformed mesh data.
-	var data := {
-		'vertices': PackedVector3Array(),
-		'indexes': [],
-		'texcoords': {},
-		'normals': PackedVector3Array(),
-		'colors': PackedColorArray(),
-		'transform_blend_indexes': [],
-		# Panda3D stores tangents and binormals separately, whereas Godot
-		# stores them together. Thus we'll keep track of them separately here,
-		# but recalculate them at the end if we receive any values.
-		'ptangents': PackedVector3Array(),
-		'binormals': PackedVector3Array(),
-	}
+	var mesh_data := _default_mesh_data()
+	var tangents := PackedVector3Array()
+	var binormals := PackedVector3Array()
+	#var blend_shapes: Array[Array] = []
 
 	# We will now begin to read the byte array containing our mesh data.
 	#
@@ -81,34 +246,15 @@ func _gather_mesh_data() -> Dictionary:
 		for column in array_format.get_columns():
 			var alignment_goal: int = array_datagram.cursor + column.size
 
-			var column_name: String = column.name.name
+			var column_name := str(column.name)
 			var numeric_type_decoder := Callable(
 				array_datagram, column.numeric_type_decoder
 			)
 			match column.contents:
 				PandaGeom.Contents.POINT:
-					data.vertices.append(
+					mesh_data[Mesh.ARRAY_VERTEX].append(
 						array_datagram.decode_vector3(numeric_type_decoder)
 						* global_configuration.rotation_matrix
-					)
-				PandaGeom.Contents.TEXCOORD:
-					# Panda3D's UV wrapping on the vertical axis starts at the top
-					# and ends at the bottom, which is the opposite of Godot.
-					# We'll flip the V coordinate here.
-					var texcoords = array_datagram.decode_vector2(numeric_type_decoder)
-					texcoords.y = 1 - texcoords.y
-					if column_name not in data.texcoords:
-						data.texcoords[column_name] = PackedVector2Array()
-					data.texcoords[column_name].append(texcoords)
-				PandaGeom.Contents.INDEX:
-					var index = numeric_type_decoder.call()
-					if column_name == 'transform_blend':
-						data.transform_blend_indexes.append(index)
-					else:
-						data.indexes.append(index)
-				PandaGeom.Contents.NORMAL:
-					data.normals.append(
-						array_datagram.decode_vector3(numeric_type_decoder)
 					)
 				PandaGeom.Contents.VECTOR:
 					# As of Panda3D 1.10, normal mapping is done via three
@@ -127,16 +273,56 @@ func _gather_mesh_data() -> Dictionary:
 					)
 					match column_name:
 						'tangent':
-							data.ptangents.append(vector_data)
+							tangents.append(vector_data)
 						'binormal':
-							data.binormals.append(vector_data)
+							binormals.append(vector_data)
 						'normal':
-							data.normals.append(vector_data)
+							mesh_data[Mesh.ARRAY_NORMAL].append(vector_data)
+				PandaGeom.Contents.TEXCOORD:
+					# Panda3D's UV wrapping on the vertical axis starts at the top
+					# and ends at the bottom, which is the opposite of Godot.
+					# We'll flip the V coordinate here.
+					var texcoords = array_datagram.decode_vector2(numeric_type_decoder)
+					texcoords.y = 1 - texcoords.y
+					#if column_name not in data.texcoords:
+					#	data.texcoords[column_name] = PackedVector2Array()
+					#data.texcoords[column_name].append(texcoords)
+					mesh_data[Mesh.ARRAY_TEX_UV].append(texcoords)
 				PandaGeom.Contents.COLOR:
-					data.colors.append(numeric_type_decoder.call())
-				_:
-					push_warning('%s Skipping %s bytes of unknown column content...' % [self, alignment_goal])
-					array_datagram.take_size(alignment_goal)
+					mesh_data[Mesh.ARRAY_COLOR].append(numeric_type_decoder.call())
+				PandaGeom.Contents.INDEX:
+					var index = numeric_type_decoder.call()
+					if column_name == 'transform_blend':
+						mesh_data[PandaGeom.TRANSFORM_BLEND_INDEXES].append(index)
+					else:
+						mesh_data[Mesh.ARRAY_INDEX].append(index)
+				PandaGeom.Contents.MORPH_DELTA:
+					var morph_column := column_name.get_slice('.', 0)
+					var morph_slider := column_name.split('.', true, 2)[2]
+					if morph_slider not in mesh_data[PandaGeom.BLEND_SHAPES]:
+						mesh_data[PandaGeom.BLEND_SHAPES][morph_slider] = new_mesh_array()
+						mesh_data[PandaGeom.BLEND_SHAPES][morph_slider][Mesh.ARRAY_VERTEX] = PackedVector3Array()
+					match morph_column:
+						'vertex':
+							mesh_data[PandaGeom.BLEND_SHAPES][morph_slider][Mesh.ARRAY_VERTEX].append(
+								array_datagram.decode_vector3(numeric_type_decoder)
+								* global_configuration.rotation_matrix
+							)
+						_:
+							push_warning('%s: Skipping %s bytes of unknown morph column data (type: %s)...' % [
+								self, column.size, morph_column
+							])
+							array_datagram.take_size(column.size)
+				PandaGeom.Contents.NORMAL:
+					mesh_data[Mesh.ARRAY_NORMAL].append(
+						array_datagram.decode_vector3(numeric_type_decoder)
+					)
+				var content_type:
+					if content_type != PandaGeom.Contents.OTHER:
+						push_warning('%s: Skipping %s bytes of unknown column content (type: %d)...' % [
+							self, column.size, content_type
+						])
+					array_datagram.take_size(column.size)
 
 			if array_datagram.cursor < alignment_goal:
 				array_datagram.take_size(alignment_goal - array_datagram.cursor)
@@ -144,39 +330,26 @@ func _gather_mesh_data() -> Dictionary:
 		array_datagram.take_size(stride_skip)
 
 	# We're doing reading the byte array! Let's finish up our data dictionary.
-
-	# First, if we didn't get any tangent data, erase those two.
-	# TODO: Since we erase everything at the bottom anyway, this is redundant.
-	if not data.ptangents or not data.binormals:
-		data.erase('ptangents')
-		data.erase('binormals')
-	else:
+	if tangents and binormals:
 		# We must calculate the directional signs of the binormals.
-		var tangents = PackedFloat32Array()
 		bam_parser.ensure(
-			data.ptangents.size() == data.binormals.size(),
+			tangents.size() == binormals.size(),
 			"The size of the tangents and binormal arrays do not match (%s != %s)" %
-				[data.ptangents.size(), data.binormals.size()]
+				[tangents.size(), binormals.size()]
 		)
 		bam_parser.ensure(
-			data.ptangents.size() == data.normals.size(),
+			tangents.size() == mesh_data[Mesh.ARRAY_NORMAL].size(),
 			"The size of the tangents and normal arrays do not match (%s != %s)" %
-				[data.ptangents.size(), data.normals.size()]
+				[tangents.size(), mesh_data[Mesh.ARRAY_NORMAL].size()]
 		)
-		for i in range(data.ptangents.size()):
-			var normal: Vector3 = data.normals[i]
-			var tangent: Vector3 = data.ptangents[i]
-			var binormal: Vector3 = data.binormals[i]
+		for i in range(tangents.size()):
+			var normal: Vector3 = mesh_data[Mesh.ARRAY_NORMAL][i]
+			var tangent: Vector3 = tangents[i]
+			var binormal: Vector3 = binormals[i]
 			var calc_binormal = tangent.cross(normal)
 			var dot_product = calc_binormal.dot(binormal)
-			tangents.append_array(PackedFloat32Array([
+			mesh_data[Mesh.ARRAY_TANGENT].append_array(PackedFloat32Array([
 				tangent.x, tangent.y, tangent.z, 1.0 if dot_product > 0 else -1.0
 			]))
-		data.tangents = tangents
 
-	# Erase any empty entries.
-	for key in data.keys():
-		if not data[key]:
-			data.erase(key)
-
-	return data
+	return mesh_data

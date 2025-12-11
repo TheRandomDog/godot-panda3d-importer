@@ -8,7 +8,7 @@ func _get_importer_name():
 	return "panda3d.bam.font"
 
 func _get_visible_name():
-	return "BAM Font"
+	return "Font File"
 
 func _get_recognized_extensions():
 	return ["bam", "pz"]

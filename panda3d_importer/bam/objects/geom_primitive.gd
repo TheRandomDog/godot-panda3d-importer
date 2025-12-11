@@ -34,7 +34,7 @@ func _get_primitive_type() -> Mesh.PrimitiveType:
 func _get_vertex_indices() -> PackedInt32Array:
 	if vertices:
 		# Panda3D has provided us some indices already.
-		return vertices._gather_mesh_data()['indexes']
+		return vertices._gather_mesh_data()[Mesh.ARRAY_INDEX]
 	else:
 		# There is no index data, so the primitive is not indexed.
 		return PackedInt32Array(range(first_vertex, first_vertex + vertices_count))

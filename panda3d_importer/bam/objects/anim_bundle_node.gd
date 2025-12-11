@@ -13,6 +13,20 @@ func parse_object_data() -> void:
 	super()
 	_bundle = datagram.next_object_ref(PandaAnimBundle)
 
+func convert() -> Node:
+	return null
+
+#func convert() -> AnimationPlayer:
+#	#var node := super()
+#	var animation_player := AnimationPlayer.new()
+#	animation_player.name = bundle.name
+#	#node.add_child(animation_player, true)
+#	#animation_player.owner = node
+#	var animation_library := AnimationLibrary.new()
+#	animation_library.add_animation(bundle.name, convert_animation())
+#	animation_player.add_animation_library(&'', animation_library)
+#	return animation_player
+
 ## Converts our AnimBundleNode into a Godot animation.
 func convert_animation() -> Animation:
 	var animation := Animation.new()
@@ -20,10 +34,13 @@ func convert_animation() -> Animation:
 	animation.length = bundle.frame_count / bundle.fps
 	animation.step = 1 / bundle.fps
 
-	for group in bundle.children:
-		# TODO: morph
-		if group.name == '<skeleton>':
-			_check_group_for_channels('%s/Skeleton3D:' % name, animation, group)
+	for group in bundle.get_children():
+		match group.name:
+			'<skeleton>':
+				#_check_group_for_channels('%s/Skeleton3D:' % name, animation, group)
+				_check_group_for_channels('Skeleton3D:', animation, group)
+			'morph':
+				_check_group_for_morphs(animation, group)
 
 	return animation
 
@@ -34,7 +51,7 @@ func convert_animation() -> Animation:
 ## itself: typically, a joint/bone. These objects also inherit PandaAnimGroup,
 ## meaning they can be nested and have children, so we'll check recursively.
 func _check_group_for_channels(path: String, animation: Animation, group: PandaAnimGroup, parent_tracks=null) -> void:
-	for channel in group.children:
+	for channel in group.get_children():
 		bam_parser.ensure(
 			channel is PandaAnimChannelBase,
 			'In a nested AnimGroup child of an AnimBundleNode, instead of ' +
@@ -72,6 +89,9 @@ func _check_group_for_channels(path: String, animation: Animation, group: PandaA
 			elif data_type == 'scale':
 				track_index = animation.add_track(Animation.TYPE_SCALE_3D)
 				insert_key = animation.scale_track_insert_key
+			#elif data_type == 'scalar':
+			#	track_index = animation.add_track(Animation.TYPE_BLEND_SHAPE)
+			#	insert_key = animation.blend
 
 			var frame_count = data[data_type].size()
 			our_tracks[data_type] = track_index
@@ -85,3 +105,48 @@ func _check_group_for_channels(path: String, animation: Animation, group: PandaA
 
 		# Recursively check any children for more AnimChannels.
 		_check_group_for_channels(path, animation, channel, our_tracks)
+
+func _check_group_for_morphs(animation: Animation, group: PandaAnimGroup, parent_tracks=null) -> void:
+	for channel in group.get_children():
+		bam_parser.ensure(
+			channel is PandaAnimChannelBase,
+			'In a nested AnimGroup child of an AnimBundleNode, instead of ' +
+				'PandaAnimChannelBase, group was: %s' % channel
+		)
+		var data = channel.get_animation_data()
+
+		# Let's keep a record of our animation track IDs for each type of transform
+		# for this channel. We'll also keep a record of the max number of frames
+		# we have data for that transform type, so we can extrapolate out if
+		# necessary.
+		# TODO: Probably best not to even extrapolate out if we already have
+		# inserted the one keyframe we need.
+		var our_tracks = {
+			'scalar': -1, 'scalar_max': -1,
+		}
+		# Time to insert keyframes into the animation.
+		# Let's loop through our transform types.
+		for data_type in our_tracks.keys():
+			if '_max' in data_type or not data[data_type]:
+				# There is no data for this transform type, or,
+				# it is not a transform type at all (just a record of max frames).
+				continue
+
+			var track_index: int
+			var insert_key: Callable
+			if data_type == 'scalar':
+				track_index = animation.add_track(Animation.TYPE_BLEND_SHAPE)
+				insert_key = animation.blend_shape_track_insert_key
+
+			var frame_count = data[data_type].size()
+			our_tracks[data_type] = track_index
+			our_tracks[data_type + '_max'] = frame_count
+			animation.track_set_path(track_index, '.:%s' % channel.name)
+			var value
+			for i in range(frame_count):
+				# Pull the value for this animation keyframe for this transform type.
+				value = data[data_type][i]
+				insert_key.call(track_index, animation.step * i, value)
+
+		# Recursively check any children for more AnimChannels.
+		_check_group_for_morphs(animation, channel, our_tracks)

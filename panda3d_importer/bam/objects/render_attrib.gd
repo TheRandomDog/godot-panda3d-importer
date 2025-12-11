@@ -6,5 +6,8 @@ class_name PandaRenderAttrib
 func parse_object_data() -> void:
 	pass
 
+func apply_to_material(material: PandaMaterial3D) -> void:
+	pass
+
 func apply_to_surface(surface: Surface) -> void:
 	pass

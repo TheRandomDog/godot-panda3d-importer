@@ -99,12 +99,19 @@ func _to_string() -> String:
 			object_id,
 			datagram.size(),
 		]
-	elif object_type.has_exact_handler:
-		return "<%s %s>" % [object_type.name, object_id]
-	elif object_type.has_handler:
-		return "<%s (%s) %s>" % [object_type.name, object_type.handler.resource_path, object_id]
 	else:
-		return "<%s (NO HANDLER) %s>" % [object_type.name, object_id]
+		var name := get(&'name')
+		if name == null:
+			name = ''
+		else:
+			name = ' "%s"' % name
+
+		if object_type.has_exact_handler:
+			return "<%s %s%s>" % [object_type.name, object_id, name]
+		elif object_type.has_handler:
+			return "<%s (%s) %s%s>" % [object_type.name, object_type.handler.resource_path, object_id, name]
+		else:
+			return "<%s (NO HANDLER) %s%s>" % [object_type.name, object_id, name]
 
 func is_resolved() -> bool:
 	return resolved

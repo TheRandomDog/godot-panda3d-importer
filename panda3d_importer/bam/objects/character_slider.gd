@@ -1,0 +1,2 @@
+extends PandaMovingPartScalar
+class_name PandaCharacterSlider

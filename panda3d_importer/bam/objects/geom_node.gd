@@ -14,9 +14,13 @@ func parse_object_data() -> void:
 ##
 ## [GeomNode] objects will convert into a [MeshInstance3D].
 func convert() -> MeshInstance3D:
+	if global_configuration.import_flags & EditorSceneFormatImporter.IMPORT_DISCARD_MESHES_AND_MATERIALS:
+		return null
+
 	# Create a new array mesh for this GeomNode.
 	var mesh := ArrayMesh.new()
 	var mesh_surface_count := 0
+	var blend_shapes: PackedStringArray
 
 	# This GeomNode may be the parent of multiple geometries,
 	# we'll take all of them.
@@ -32,8 +36,10 @@ func convert() -> MeshInstance3D:
 
 		# Get the base array containing our mesh data. This contains most
 		# everything other than special render data and vertex indexing.
-		var mesh_array = geom.create_base_mesh_array()
-		var mesh_array_flags = geom.get_mesh_array_flags()
+		var mesh_data := geom.create_mesh_data()
+		if mesh.get_surface_count() == 0:
+			for blend_shape in mesh_data.blend_shapes:
+				mesh.add_blend_shape(blend_shape)
 
 		# Apply render attributes and effects to the mesh surface.
 		for attrib in geom_info.render_state.get_attribs():
@@ -41,14 +47,29 @@ func convert() -> MeshInstance3D:
 		for effect in effects.get_effects():
 			effect.apply_to_surface(surface)
 
+		#push_warning(mesh_data.blend_shapes.size(), ' ', mesh_data.blend_shapes.values().size())
 		# Pull vertex index information from each primitive.
+		var bs := mesh_data.blend_shapes.values()
+		if not bs:
+			bs = []
+			for i in mesh.get_blend_shape_count():
+				var a := PandaGeomVertexArrayData.new_mesh_array()
+				a[Mesh.ARRAY_VERTEX] = PackedVector3Array()
+				a[Mesh.ARRAY_VERTEX].resize(mesh_data.array[Mesh.ARRAY_VERTEX].size())
+				bs.append(a)
+		else:
+			print(mesh_data.array[Mesh.ARRAY_VERTEX])
+			for i in mesh_data.blend_shapes:
+				prints(i, mesh_data.blend_shapes[i][Mesh.ARRAY_VERTEX])
+
 		for primitive in geom.get_primitives():
-			mesh_array[Mesh.ARRAY_INDEX] = primitive._get_vertex_indices()
+			mesh_data.array[Mesh.ARRAY_INDEX] = primitive._get_vertex_indices()
 			mesh.add_surface_from_arrays(
 				primitive._get_primitive_type(),
-				mesh_array,
-				[], {},
-				mesh_array_flags
+				mesh_data.array,
+				bs,
+				{},
+				mesh_data.flags
 			)
 			# Finalize the mesh surface.
 			mesh.surface_set_material(mesh_surface_count, surface.finalize())

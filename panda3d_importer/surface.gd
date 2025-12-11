@@ -76,8 +76,6 @@ func add_vertex_coloring() -> void:
 
 func add_texture(new_texture: PandaImageAndAlphaTexture) -> void:
 	features |= Feature.TEXTURE
-	if new_texture.has_alpha():
-		features |= Feature.ALPHA
 	texture = new_texture
 	Surface.static_mutex.lock()
 	if texture in textures_to_id:

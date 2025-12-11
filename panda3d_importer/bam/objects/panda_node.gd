@@ -90,7 +90,7 @@ func _convert_effects(node: Node3D) -> void:
 ## Converts this PandaNode into a Godot node. [br][br] Typically, this will be
 ## a [Node3D] or a node that inherits it. BAM Objects that inherit
 ## PandaNode can override this method to customize the conversion process.
-func convert() -> Node3D:
+func convert() -> Node:
 	var node := _get_godot_node()
 	_convert_node(node)
 	return node
@@ -124,12 +124,23 @@ func _convert_node(node: Node3D, parent: Node3D = null) -> void:
 
 	gather_children(node, parent)
 
+
 ## Loops through each child of this [PandaNode] and converts it to a Godot node,
 ## before adding it as a child of the given [param parent].
 func gather_children(node: Node3D, parent: Node3D):
 	for child_info in children:
 		var child_node := child_info.node.convert()
-		parent.add_child(child_node)
+		if child_node:
+			var existing_child := parent.get_node_or_null(NodePath(child_node.name))
+			if existing_child:
+				for grandchild in child_node.get_children(true):
+					grandchild.owner = null
+					grandchild.reparent(existing_child)
+					grandchild.owner = existing_child
+				child_node.free()
+			else:
+				parent.add_child(child_node)
+				child_node.owner = parent
 
 
 class Child extends BAMStruct:

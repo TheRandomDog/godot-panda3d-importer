@@ -61,6 +61,9 @@ func _init(index: int, name: String, parent_types: Array[BamObjectType]):
 			self.parent_types.append(type)
 	self.handler = _get_handler_script()
 
+func _to_string() -> String:
+	return '<BAMObjectType "%s" (%d)>' % [self.name, self.index]
+
 ## Returns the full hierarchy of type inheritance for this object type, starting
 ## with this object type itself.[br][br]
 ##
